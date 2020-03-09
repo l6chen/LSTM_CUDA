@@ -6,3 +6,6 @@ Implement LSTM purely with CUDA used to analyze sentiment
 2. Specify which packages we need
 3. Specify which parts of LSTM should be accelerated with CUDA 
 4. Write python scipt to compare results
+
+## Datasets
+https://www.kaggle.com/crowdflower/first-gop-debate-twitter-sentiment
