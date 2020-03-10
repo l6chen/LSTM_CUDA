@@ -46,5 +46,5 @@ set(CUDA_TOOLKIT_SAMPLES_DIR ${CUDA_TOOLKIT_ROOT_DIR}/samples)
 set(CUDA_TOOLKIT_ROOT_DIR ${CUDA_TOOLKIT_ROOT_DIR})
 endif(WINDOWS)
 ###################################################################
-find_package( OpenCV REQUIRED )
+#find_package( OpenCV REQUIRED )
 add_subdirectory (Src)

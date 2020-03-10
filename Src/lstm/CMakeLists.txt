@@ -8,7 +8,7 @@ include_directories(
 #######################################
 file(GLOB HEADERS *.h *.cuh)
 
-if (OpenCV_FOUND)
+#if (OpenCV_FOUND)
     include_directories(${OpenCV_INCLUDE_DIRS} )
     cuda_add_executable(sentimentAnalyzer
       ${HEADERS}
@@ -27,4 +27,4 @@ if (OpenCV_FOUND)
       ${CUDA_CURAND_LIBRARY}
       ${OpenCV_LIBS}
     )
-endif()
+#endif()
