@@ -15,6 +15,12 @@ file(GLOB HEADERS *.h *.cuh)
       lstm.cu
       sentimentAnalyzer.cpp
       dataLoader.cu
+      basicNeuron.cu
+      forgetGate.cu
+      inputGate.cu
+      outputGate.cu
+      moduleGate.cu
+      util.cu
 
       OPTIONS --cudart=shared  -arch sm_52 -use_fast_math
       DEBUG -Xptxas -v -g -G 
