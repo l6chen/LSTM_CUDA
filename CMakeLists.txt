@@ -3,7 +3,7 @@ project(LSTM)
 
 set(TOP_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-set(OpenCV_DIR C:/Users/p3li/Downloads/opencv/build)
+#set(OpenCV_DIR C:/Users/p3li/Downloads/opencv/build)
 
 
 

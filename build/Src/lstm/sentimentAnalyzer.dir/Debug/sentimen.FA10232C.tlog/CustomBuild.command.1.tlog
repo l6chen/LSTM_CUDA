@@ -1,0 +1,52 @@
+^C:\USERS\MORLIGAN\DESKTOP\GITHUBPRJ\CUDA\LSTM_CUDA\SRC\LSTM\LSTM.CU
+setlocal
+cd C:\Users\Morligan\Desktop\Githubprj\CUDA\LSTM_CUDA\build\Src\lstm\CMakeFiles\sentimentAnalyzer.dir
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/sentimentAnalyzer.dir//Debug
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -D verbose:BOOL=OFF -D "CCBIN:PATH=D:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools/MSVC/14.21.27702/bin/Hostx64/x64" -D build_configuration:STRING=Debug -D generated_file:STRING=C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/sentimentAnalyzer.dir//Debug/sentimentAnalyzer_generated_lstm.cu.obj -D generated_cubin_file:STRING=C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/sentimentAnalyzer.dir//Debug/sentimentAnalyzer_generated_lstm.cu.obj.cubin.txt -P C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/sentimentAnalyzer.dir//sentimentAnalyzer_generated_lstm.cu.obj.Debug.cmake
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\MORLIGAN\DESKTOP\GITHUBPRJ\CUDA\LSTM_CUDA\SRC\LSTM\DATALOADER.CU
+setlocal
+cd C:\Users\Morligan\Desktop\Githubprj\CUDA\LSTM_CUDA\build\Src\lstm\CMakeFiles\sentimentAnalyzer.dir
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/sentimentAnalyzer.dir//Debug
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -D verbose:BOOL=OFF -D "CCBIN:PATH=D:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools/MSVC/14.21.27702/bin/Hostx64/x64" -D build_configuration:STRING=Debug -D generated_file:STRING=C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/sentimentAnalyzer.dir//Debug/sentimentAnalyzer_generated_dataLoader.cu.obj -D generated_cubin_file:STRING=C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/sentimentAnalyzer.dir//Debug/sentimentAnalyzer_generated_dataLoader.cu.obj.cubin.txt -P C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/sentimentAnalyzer.dir//sentimentAnalyzer_generated_dataLoader.cu.obj.Debug.cmake
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\MORLIGAN\DESKTOP\GITHUBPRJ\CUDA\LSTM_CUDA\BUILD\CMAKEFILES\C42AC9C330E4FC430977C6336CA269BC\SENTIMENTANALYZER_INTERMEDIATE_LINK.OBJ.RULE
+setlocal
+"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -lnvToolExt -gencode arch=compute_52,code=sm_52 --cudart=shared -arch sm_52 -use_fast_math -m64 -ccbin "D:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools/MSVC/14.21.27702/bin/Hostx64/x64" -dlink C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/sentimentAnalyzer.dir//Debug/sentimentAnalyzer_generated_lstm.cu.obj C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/sentimentAnalyzer.dir//Debug/sentimentAnalyzer_generated_dataLoader.cu.obj -o C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/sentimentAnalyzer.dir/Debug/sentimentAnalyzer_intermediate_link.obj -Xcompiler /MDd
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\MORLIGAN\DESKTOP\GITHUBPRJ\CUDA\LSTM_CUDA\SRC\LSTM\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA -BC:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build --check-stamp-file C:/Users/Morligan/Desktop/Githubprj/CUDA/LSTM_CUDA/build/Src/lstm/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -6,7 +6,7 @@ include_directories(
 
 #######################################
 #######################################
-file(GLOB HEADERS *.h *.cuh *.cpp)
+file(GLOB HEADERS *.h *.cuh)
 
 if (OpenCV_FOUND)
     include_directories(${OpenCV_INCLUDE_DIRS} )

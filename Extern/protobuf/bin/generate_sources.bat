@@ -1,1 +1,0 @@
-./protoc.exe -I=../../../resources --python_out=../../../scripts --cpp_out=../../../src/protobuf_generated ../../../resources/fbt_format.proto
