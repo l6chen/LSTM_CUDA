@@ -3,7 +3,6 @@ project(LSTM)
 
 set(TOP_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-#set(OpenCV_DIR C:/Users/p3li/Downloads/opencv/build)
 
 
 
@@ -46,5 +45,4 @@ set(CUDA_TOOLKIT_SAMPLES_DIR ${CUDA_TOOLKIT_ROOT_DIR}/samples)
 set(CUDA_TOOLKIT_ROOT_DIR ${CUDA_TOOLKIT_ROOT_DIR})
 endif(WINDOWS)
 ###################################################################
-#find_package( OpenCV REQUIRED )
 add_subdirectory (Src)

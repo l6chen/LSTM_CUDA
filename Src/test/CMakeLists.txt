@@ -11,7 +11,7 @@ file(GLOB HEADERS
 ../lstm/*.h 
 ../lstm/*.cuh)
 
-#if (OpenCV_FOUND)
+
     include_directories(${OpenCV_INCLUDE_DIRS} )
     cuda_add_executable(test
       ${HEADERS}
@@ -32,4 +32,4 @@ file(GLOB HEADERS
       ${CUDA_CURAND_LIBRARY}
       ${OpenCV_LIBS}
     )
-#endif()
+
