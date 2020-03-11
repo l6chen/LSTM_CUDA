@@ -5,6 +5,7 @@
 */
 #include <vector>
 #include <iostream>
+#include "outputGate.h"
 
 namespace outputGate {
     OutputGate::OutputGate(std::vector<std::vector<float>> W, std::vector<float> b){}

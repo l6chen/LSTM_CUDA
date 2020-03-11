@@ -8,7 +8,7 @@
 
 int main() {
 	std::cout << "LSTM STRATS." << std::endl;
-	lstm::LSTMNetwork model(0.1);
+	lstm::LSTMNetwork model(0.1f);
 	system("PAUSE");
 	return 0;
 }

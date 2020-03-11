@@ -6,6 +6,23 @@
 #include <vector>
 #include <iostream>
 
-namespace basicNeuron {
-    BasicNeuron::BasicNeuron(std::vector<std::vector<float>> W, std::vector<float> b){}
+#include <cuda_fp16.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <helper_cuda.h>
+#include <helper_functions.h>
+#include <curand.h>
+#include <curand_kernel.h>
+#include "util.h"
+
+namespace util {
+	__global__ void cudaHello()
+	{
+		printf("Hello World from GPU!\n");
+	}
+
+	void hellofromGPU()
+	{
+		cudaHello << <1, 10 >> > ();
+	}
 }

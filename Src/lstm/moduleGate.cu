@@ -5,6 +5,7 @@
 */
 #include <vector>
 #include <iostream>
+#include "moduleGate.h"
 
 namespace moduleGate {
     ModuleGate::ModuleGate(std::vector<std::vector<float>> W, std::vector<float> b){}

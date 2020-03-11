@@ -5,6 +5,7 @@
 */
 #include <vector>
 #include <iostream>
+#include "forgetGate.h"
 
 namespace forgetGate {
     ForgetGate::ForgetGate(std::vector<std::vector<float>> W, std::vector<float> b){}

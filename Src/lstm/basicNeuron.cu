@@ -5,6 +5,7 @@
 */
 #include <vector>
 #include <iostream>
+#include "basicNeuron.h"
 
 namespace basicNeuron {
     BasicNeuron::BasicNeuron(std::vector<std::vector<float>> W, std::vector<float> b){}
