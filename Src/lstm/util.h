@@ -9,8 +9,14 @@
 #include <vector>
 #include <iostream>
 
+
 namespace util {
-	void hellofromGPU();
+	void matrixSum(float* matA, float* matB, int m, int n);//m by n matrix sum
+	void matrixMul(float* out, float* matA, float* matB, int m, int n, int k);//[m,n] * [n,k]
+	void matrixMulElem(float* matA, float* matB, int m, int n);
+	void softmax();
+	void tanh();
+	void sigmoid();
 }
 
 #endif /* UTIL_H_ */

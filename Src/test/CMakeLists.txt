@@ -7,6 +7,7 @@ include_directories(
 #######################################
 #######################################
 file(GLOB HEADERS 
+*.h
 ../lstm/*.h 
 ../lstm/*.cuh)
 
@@ -14,8 +15,12 @@ file(GLOB HEADERS
     include_directories(${OpenCV_INCLUDE_DIRS} )
     cuda_add_executable(test
       ${HEADERS}
-      test.cu
+      test_main.cu
+      test_util.cu
       ../lstm/dataLoader.cu
+      ../lstm/util.cu
+
+ 
       OPTIONS --cudart=shared  -arch sm_52 -use_fast_math
       DEBUG -Xptxas -v -g -G 
     )
