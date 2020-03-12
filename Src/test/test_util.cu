@@ -12,6 +12,8 @@
 #include <curand.h>
 #include <curand_kernel.h>
 
+#define CATEGORIES 3
+
 namespace testUtil {
 	void initialData(float* ip, const int size)
 	{
@@ -91,9 +93,70 @@ namespace testUtil {
 		return;
 	}
 
+
+	void tanhOnHost(float *A, float*B, int nx) {
+		float* ia = A;
+		float* ib = B;
+
+		for (int ix = 0; ix < nx; ix++)
+		{
+			
+			ib[ix] =  (expf(ia[ix]) - expf(-ia[ix])) / (expf(ia[ix]) + expf(-ia[ix]));
+		}
+
+		return;
+	}
+
+	void softmaxOnHost(float *A, float*B, int nx) {
+		
+		float* ia = A;
+		float* ib = B;
+		float* ic;
+		ic = (float*)malloc(nx * sizeof(float));
+
+		// compute sum
+		float sum = 0.0;
+		for (int ix = 0; ix < nx; ix++) {
+			ia[ix] = expf(ia[ix]);
+		}
+
+		for (int ix = 0; ix < nx; ix++) {
+			if((ix+1)%CATEGORIES == 0) {
+				ic[ix/3] = sum;
+				sum = 0.0;
+			}
+			sum += ia[ix];
+		}
+
+		for (int ix = 0; ix < nx; ix++) {
+
+			ib[ix] = ia[ix] / ic[ix/3];
+		}
+
+		free(ic);
+	}
+	
+	
+	
+	void sigmoidOnHost(float *A, float*B, int nx) {
+		
+		float* ia = A;
+		float* ib = B;
+
+		for (int ix = 0; ix < nx; ix++)
+		{
+
+			ib[ix] = expf(ia[ix]) / (1.0f + expf(ia[ix]));
+		}
+
+		return;
+	}
+
+
+
 	void checkResult(float* hostRef, float* gpuRef, const int N, std::string testtype)
 	{
-		double epsilon = 1.0E-8;
+		double epsilon = 1.0E-6;
 		bool match = 1;
 
 		for (int i = 0; i < N; i++)
@@ -101,7 +164,7 @@ namespace testUtil {
 			if (abs(hostRef[i] - gpuRef[i]) > epsilon)
 			{
 				match = 0;
-				printf("host %f gpu %f\n", hostRef[i], gpuRef[i]);
+				printf("idx: %d host %f gpu %f\n",i, hostRef[i], gpuRef[i]);
 				break;
 			}
 		}
@@ -208,4 +271,85 @@ namespace testUtil {
 		CHECK(cudaDeviceReset());
 
 	}
+
+	void testtanh() {
+
+		std::string testtype = "tanh";
+		int nx = 1 << 14;
+		int nBytes = nx * sizeof(float);
+
+		float* A, *B;
+		A = (float*)malloc(nBytes);
+		B = (float*)malloc(nBytes);
+
+		initialData(A, nx);
+		tanhOnHost(A, B, nx);
+
+		util::tanh(A, nx);
+		checkResult(B, A, nx, testtype);
+
+
+		// free host memory
+		free(A);
+		free(B);
+
+		// reset device
+		CHECK(cudaDeviceReset());
+	}
+
+	void testsoftmax() {
+
+		std::string testtype = "softmax";
+		int nx = 1 << 14;
+		int nBytes = nx * sizeof(float);
+
+		float* A, *B;
+		A = (float*)malloc(nBytes);
+		B = (float*)malloc(nBytes);
+
+		initialData(A, nx);
+		softmaxOnHost(A, B, nx);
+
+		util::softmax(A, nx);
+		checkResult(B, A, nx, testtype);
+
+
+
+		// free host memory
+		free(A);
+		free(B);
+
+		// reset device
+		CHECK(cudaDeviceReset());
+	}
+
+	void testsigmoid() {
+
+		std::string testtype = "sigmoid";
+		int nx = 1 << 14;
+		int nBytes = nx * sizeof(float);
+
+		float* A, *B;
+		A = (float*)malloc(nBytes);
+		B = (float*)malloc(nBytes);
+
+		initialData(A, nx);
+		sigmoidOnHost(A, B, nx);
+
+		util::sigmoid(A, nx);
+		checkResult(B, A, nx, testtype);
+
+
+		// free host memory
+		free(A);
+		free(B);
+
+		// reset device
+		CHECK(cudaDeviceReset());
+	}
+
+
+
+
+
 }

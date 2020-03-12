@@ -24,6 +24,9 @@ namespace testUtil {
 	void testmatrixSum();
 	void testmatrixMulElem();
 	void testmatrixMul();
+	void testtanh();
+	void testsigmoid();
+	void testsoftmax();
 }
 
 #endif /* TEST_UTIL_H_ */
