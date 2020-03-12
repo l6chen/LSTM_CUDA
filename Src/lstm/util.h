@@ -14,9 +14,9 @@ namespace util {
 	void matrixSum(float* matA, float* matB, int m, int n);//m by n matrix sum
 	void matrixMul(float* out, float* matA, float* matB, int m, int n, int k);//[m,n] * [n,k]
 	void matrixMulElem(float* matA, float* matB, int m, int n);
-	void softmax();
-	void tanh();
-	void sigmoid();
+	void softmax(float* A, int len);
+	void tanh(float* A, int len);
+	void sigmoid(float* A, int len);
 }
 
 #endif /* UTIL_H_ */
