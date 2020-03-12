@@ -152,7 +152,27 @@ namespace testUtil {
 		return;
 	}
 
+	void tanhPrimeOnHost(float* A, float* B, const int nx)
+	{
+		float* ia = A;
+		float* ib = B;
 
+		for (int ix = 0; ix < nx; ix++)
+			ib[ix] = 1.0f - ia[ix] * ia[ix];
+
+		return;
+	}
+
+	void sigmoidPrimeOnHost(float* A, float* B, const int nx)
+	{
+		float* ia = A;
+		float* ib = B;
+
+		for (int ix = 0; ix < nx; ix++)
+			ib[ix] = ia[ix] * (1.0f - ia[ix]);
+
+		return;
+	}
 
 	void checkResult(float* hostRef, float* gpuRef, const int N, std::string testtype)
 	{
@@ -349,6 +369,50 @@ namespace testUtil {
 	}
 
 
+	void testtanhPrime() {
+		std::string testtype = "tanhprime";
+		int nx = 1 << 5;
+
+		int nxB = nx * sizeof(float);
+
+		float* matA, *cpuM;
+		matA = (float*)malloc(nxB);
+		cpuM = (float*)malloc(nxB);
+
+		initialData(matA, nx);
+		tanhPrimeOnHost(matA, cpuM, nx);
+		util::tanhPrime(matA, nx);
+		checkResult(cpuM, matA, nx, testtype);
+
+		free(matA);
+		free(cpuM);
+
+		// reset device
+		CHECK(cudaDeviceReset());
+
+	}
+
+	void testsigmoidPrime() {
+		std::string testtype = "sigmoidprime";
+		int nx = 1 << 5;
+
+		int nxB = nx * sizeof(float);
+
+		float* matA, *cpuM;
+		matA = (float*)malloc(nxB);
+		cpuM = (float*)malloc(nxB);
+
+		initialData(matA, nx);
+		sigmoidPrimeOnHost(matA, cpuM, nx);
+		util::sigmoidPrime(matA, nx);
+		checkResult(cpuM, matA, nx, testtype);
+
+		free(matA);
+		free(cpuM);
+
+		// reset device
+		CHECK(cudaDeviceReset());
+	}
 
 
 

@@ -8,15 +8,31 @@
 #include <vector>
 #include "../lstm/dataLoader.h"
 #include "test_util.h"
+#include <iomanip>
+#include <direct.h>
+
+std::string subreplace(std::string resource_str, std::string sub_str, std::string new_str)
+{
+	std::string::size_type pos = 0;
+	while ((pos = resource_str.find(sub_str)) != std::string::npos) 
+	{
+		resource_str.replace(pos, sub_str.length(), new_str);
+	}
+	return resource_str;
+}
+
 
 int main() {
 	const std::string DELIMITER = "================================================================================";
 	std::cout << "Test begins." << std::endl;
 
-
 	//Test Dataloader
 	std::cout << DELIMITER << std::endl << "Test Data Loader" << std::endl;
-	std::string datasetDir = "C:/Users/p3li/Downloads/LSTM_CUDA-master/LSTM_CUDA-master/datasets";
+	char buf1[256];
+	_getcwd(buf1, sizeof(buf1));
+	std::string testDir = buf1;
+	testDir = subreplace(testDir, "\\", "/");
+	std::string datasetDir = testDir + "/../../../datasets";
 	dataLoader::DataLoader loader(datasetDir);
 	loader.load();
 	std::vector<std::string> sentiments = loader.getsentiments();
@@ -24,7 +40,7 @@ int main() {
 	for (int i = 0; i < 5; i++)
 		std::cout << sentiments[i] << " " << tweets[i] << std::endl;
 	std::cout << *(sentiments.end() - 1) << " " << *(tweets.end() - 1) << std::endl;
-/*
+
 	//Test Matrix Sum
 	std::cout << DELIMITER << std::endl << "Test Matrix Sum" << std::endl;
 	testUtil::testmatrixSum();
@@ -36,7 +52,7 @@ int main() {
 	//Test Matrix Mul
 	std::cout << DELIMITER << std::endl << "Test Matrix Mul" << std::endl;
 	testUtil::testmatrixMul();
-	*/
+	
 
 	//Test tanh
 	std::cout << DELIMITER << std::endl << "Test tanh" << std::endl;
@@ -50,10 +66,13 @@ int main() {
 	std::cout << DELIMITER << std::endl << "Test sigmoid" << std::endl;
 	testUtil::testsigmoid();
 
+	//Test Tanh Prime
+	std::cout << DELIMITER << std::endl << "Test Tanh Prime" << std::endl;
+	testUtil::testtanhPrime();
 
-
-
-
+	//Test Sigmoid Prime
+	std::cout << DELIMITER << std::endl << "Test Sigmoid Prime" << std::endl;
+	testUtil::testsigmoidPrime();
 
 	std::cout << "Test ends.";
 	system("PAUSE");
