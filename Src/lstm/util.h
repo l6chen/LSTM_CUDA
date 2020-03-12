@@ -17,6 +17,9 @@ namespace util {
 	void softmax(float* A, int len);
 	void tanh(float* A, int len);
 	void sigmoid(float* A, int len);
+	void tanhPrime(float* matA, int n);
+	void sigmoidPrime(float* matA, int n);
+	void crossEntropyLoss();
 }
 
 #endif /* UTIL_H_ */

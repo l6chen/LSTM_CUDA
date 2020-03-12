@@ -92,7 +92,17 @@ namespace util {
 	}
 
 
+	__global__ void tanhPrimeGPU(float* d_A, int nx) {
+		unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+		if (idx < nx)
+			d_A[idx] = 1.0f - d_A[idx] * d_A[idx];
+	}
 
+	__global__ void sigmoidPrimeGPU(float* d_A, int nx) {
+		unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+		if (idx < nx)
+			d_A[idx] = (1.0f - d_A[idx]) * d_A[idx];
+	}
 
 	void matrixSum(float* matA, float* matB, int m, int n) {
 		float* d_A, *d_B;
@@ -198,4 +208,32 @@ namespace util {
 		CHECK(cudaMemcpy(A, d_A, len * sizeof(float), cudaMemcpyDeviceToHost));
 		cudaFree(d_A);
 	}
+
+	void tanhPrime(float* matA, int n) {
+		float* d_A;
+		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, matA, n * sizeof(float), cudaMemcpyHostToDevice));
+
+		dim3 block(BLOCK_SIZE);
+		dim3 grid((n + block.x - 1) / block.x);
+
+		tanhPrimeGPU << <grid, block >> > (d_A, n);
+		CHECK(cudaMemcpy(matA, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
+		cudaFree(d_A);
+	}
+
+	void sigmoidPrime(float* matA, int n) {
+		float* d_A;
+		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, matA, n * sizeof(float), cudaMemcpyHostToDevice));
+
+		dim3 block(BLOCK_SIZE);
+		dim3 grid((n + block.x - 1) / block.x);
+
+		sigmoidPrimeGPU << <grid, block >> > (d_A, n);
+		CHECK(cudaMemcpy(matA, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
+		cudaFree(d_A);
+	}
+
+	void crossEntropyLoss(){}
 }
