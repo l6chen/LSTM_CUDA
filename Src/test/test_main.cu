@@ -74,6 +74,10 @@ int main() {
 	std::cout << DELIMITER << std::endl << "Test Sigmoid Prime" << std::endl;
 	testUtil::testsigmoidPrime();
 
+	//Test Cross Entropy Loss
+	std::cout << DELIMITER << std::endl << "Test Cross Entropy Loss" << std::endl;
+	testUtil::testcrossEntropyLoss();
+
 	std::cout << "Test ends.";
 	system("PAUSE");
 	return 0;

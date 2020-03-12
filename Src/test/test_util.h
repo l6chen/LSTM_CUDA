@@ -30,6 +30,7 @@ namespace testUtil {
 	void testmatrixMul();
 	void testtanhPrime();
 	void testsigmoidPrime();
+	void testcrossEntropyLoss();
 }
 
 #endif /* TEST_UTIL_H_ */

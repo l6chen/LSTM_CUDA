@@ -49,25 +49,22 @@ namespace util {
 		}
 	}
 
-	__global__ void softmaxGPU(float *d_A, int m) 
+	__global__ void softmaxGPU(float *d_A, int m) //problem fixed
 	{
 		int idx = threadIdx.x + blockIdx.x * blockDim.x;
 		if (idx < m) {
 			float exp = expf(d_A[idx]);
 			d_A[idx] = exp;
+
 			float sum = 0;
-
-
 			// compute sum
-			int startIdx = idx / CATEGORIES;
-			int end = startIdx + CATEGORIES;
-			for (int i = startIdx; i < end; ++i) {
+			int startIdx = idx / CATEGORIES * CATEGORIES;
+			int endIdx = startIdx + CATEGORIES;
+			for (int i = startIdx; i < endIdx; ++i) {
 				sum += d_A[i];
 			}
 
-			float sm = exp / sum;
-
-			d_A[idx] = sm;
+			d_A[idx] = d_A[idx] / sum;
 		}
 	}
 
@@ -103,6 +100,24 @@ namespace util {
 		if (idx < nx)
 			d_A[idx] = (1.0f - d_A[idx]) * d_A[idx];
 	}
+
+	__global__ void CrossEntropyLossGPU(float* d_out, float* d_pred,
+		float* d_oneHot, int m, int n, bool iftest) //problem
+	{
+		int nidx = threadIdx.x + blockDim.x * blockIdx.x;
+		if (nidx < n) {
+			d_out[nidx] = 0;
+			for (int midx = 0; midx < m; ++midx) {
+				int curIdx = midx * n + nidx;
+				if (d_oneHot[curIdx] != 0 && d_pred[curIdx] != 0) {
+					d_out[nidx] += -logf(d_pred[curIdx]);
+					if (iftest == false)
+						break;
+				}
+			}
+		}
+	}
+
 
 	void matrixSum(float* matA, float* matB, int m, int n) {
 		float* d_A, *d_B;
@@ -235,5 +250,29 @@ namespace util {
 		cudaFree(d_A);
 	}
 
-	void crossEntropyLoss(){}
+	float crossEntropyLoss(float* pred, float* oneHot, int m, int n, bool iftest) { 
+		float* d_pred, *d_oneHot, *d_out;
+		float* out = (float*)malloc(m * sizeof(float));
+		CHECK(cudaMalloc((void**)& d_pred, m * n * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_oneHot, m * n * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_out, m * sizeof(float)));
+		CHECK(cudaMemcpy(d_pred, pred, m * n * sizeof(float), cudaMemcpyHostToDevice));
+		CHECK(cudaMemcpy(d_oneHot, oneHot, m * n * sizeof(float), cudaMemcpyHostToDevice));
+
+		dim3 block(BLOCK_SIZE);
+		dim3 grid((n + block.x - 1) / block.x);
+
+		CrossEntropyLossGPU << <grid, block >> > (d_out, d_pred, d_oneHot, m, n, iftest);
+		CHECK(cudaMemcpy(out, d_out, m * sizeof(float), cudaMemcpyDeviceToHost));
+
+		float avgcost = 0;
+		for (int i = 0; i < m; ++i) {
+			avgcost += out[i];
+		}
+		avgcost /= m;
+		cudaFree(d_pred);
+		cudaFree(d_oneHot);
+		cudaFree(d_out);
+		return avgcost;
+	}
 }

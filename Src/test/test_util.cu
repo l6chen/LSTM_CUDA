@@ -20,156 +20,8 @@ namespace testUtil {
 
 		for (int i = 0; i < size; i++)
 		{
-			ip[i] = (float)(rand() & 0xFF) / 10.0f;
+			ip[i] = (float)(rand() & 0xFF % 100) / 100.0f;
 		}
-
-		return;
-	}
-
-	void sumMatrixOnHost(float* A, float* B, float* C, const int nx,
-		const int ny)
-	{
-		float* ia = A;
-		float* ib = B;
-		float* ic = C;
-
-		for (int iy = 0; iy < ny; iy++)
-		{
-			for (int ix = 0; ix < nx; ix++)
-			{
-				ic[ix] = ia[ix] + ib[ix];
-
-			}
-
-			ia += nx;
-			ib += nx;
-			ic += nx;
-		}
-
-		return;
-	}
-
-	void mulElemMatrixOnHost(float* A, float* B, float* C, const int nx,
-		const int ny)
-	{
-		float* ia = A;
-		float* ib = B;
-		float* ic = C;
-
-		for (int iy = 0; iy < ny; iy++)
-		{
-			for (int ix = 0; ix < nx; ix++)
-			{
-				ic[ix] = ia[ix] * ib[ix];
-
-			}
-
-			ia += nx;
-			ib += nx;
-			ic += nx;
-		}
-
-		return;
-	}
-
-	void mulMatrixOnHost(float* A, float* B, float* C, const int nx,
-		const int ny, const int nz)
-	{
-		float* ia = A;
-		float* ib = B;
-		float* ic = C;
-
-		for (int iy = 0; iy < ny; iy++)
-		{
-			for (int iz = 0; iz < nz; iz++)
-			{
-				float sum = 0;
-				for (int ix = 0; ix < nx; ix++)
-					sum += ia[iy * nx + ix] * ib[ix * nz + iz];
-				ic[iy * nz + iz] = sum;
-			}
-		}
-
-		return;
-	}
-
-
-	void tanhOnHost(float *A, float*B, int nx) {
-		float* ia = A;
-		float* ib = B;
-
-		for (int ix = 0; ix < nx; ix++)
-		{
-			
-			ib[ix] =  (expf(ia[ix]) - expf(-ia[ix])) / (expf(ia[ix]) + expf(-ia[ix]));
-		}
-
-		return;
-	}
-
-	void softmaxOnHost(float *A, float*B, int nx) {
-		
-		float* ia = A;
-		float* ib = B;
-		float* ic;
-		ic = (float*)malloc(nx * sizeof(float));
-
-		// compute sum
-		float sum = 0.0;
-		for (int ix = 0; ix < nx; ix++) {
-			ia[ix] = expf(ia[ix]);
-		}
-
-		for (int ix = 0; ix < nx; ix++) {
-			if((ix+1)%CATEGORIES == 0) {
-				ic[ix/3] = sum;
-				sum = 0.0;
-			}
-			sum += ia[ix];
-		}
-
-		for (int ix = 0; ix < nx; ix++) {
-
-			ib[ix] = ia[ix] / ic[ix/3];
-		}
-
-		free(ic);
-	}
-	
-	
-	
-	void sigmoidOnHost(float *A, float*B, int nx) {
-		
-		float* ia = A;
-		float* ib = B;
-
-		for (int ix = 0; ix < nx; ix++)
-		{
-
-			ib[ix] = expf(ia[ix]) / (1.0f + expf(ia[ix]));
-		}
-
-		return;
-	}
-
-	void tanhPrimeOnHost(float* A, float* B, const int nx)
-	{
-		float* ia = A;
-		float* ib = B;
-
-		for (int ix = 0; ix < nx; ix++)
-			ib[ix] = 1.0f - ia[ix] * ia[ix];
-
-		return;
-	}
-
-	void sigmoidPrimeOnHost(float* A, float* B, const int nx)
-	{
-		float* ia = A;
-		float* ib = B;
-
-		for (int ix = 0; ix < nx; ix++)
-			ib[ix] = ia[ix] * (1.0f - ia[ix]);
 
 		return;
 	}
@@ -184,7 +36,7 @@ namespace testUtil {
 			if (abs(hostRef[i] - gpuRef[i]) > epsilon)
 			{
 				match = 0;
-				printf("idx: %d host %f gpu %f\n",i, hostRef[i], gpuRef[i]);
+				printf("idx: %d host %f gpu %f\n", i, hostRef[i], gpuRef[i]);
 				break;
 			}
 		}
@@ -195,31 +47,208 @@ namespace testUtil {
 			std::cout << "Arrays do not match for " << testtype << "\n\n";
 	}
 
+	void sumMatrixOnHost(const float* A, const float* B, float* C, const int nx,
+		const int ny)
+	{
+
+		float* ic = C;
+
+		for (int iy = 0; iy < ny; iy++)
+		{
+			for (int ix = 0; ix < nx; ix++)
+			{
+				ic[ix] = A[ix] + B[ix];
+				//A[ix] = 0; this goes wrong
+			}
+
+			A += nx;
+			B += nx;
+			ic += nx;
+		}
+
+		return;
+	}
+
+	void mulElemMatrixOnHost(const float* A, const float* B, float* C, const int nx,
+		const int ny)
+	{
+
+		float* ic = C;
+
+		for (int iy = 0; iy < ny; iy++)
+		{
+			for (int ix = 0; ix < nx; ix++)
+			{
+				ic[ix] = A[ix] * B[ix];
+
+			}
+
+			A += nx;
+			B += nx;
+			ic += nx;
+		}
+
+		return;
+	}
+
+	void mulMatrixOnHost(const float* A, const float* B, float* C, const int nx,
+		const int ny, const int nz)
+	{
+		float* ic = C;
+
+		for (int iy = 0; iy < ny; iy++)
+		{
+			for (int iz = 0; iz < nz; iz++)
+			{
+				float sum = 0;
+				for (int ix = 0; ix < nx; ix++)
+					sum += A[iy * nx + ix] * B[ix * nz + iz];
+				ic[iy * nz + iz] = sum;
+			}
+		}
+
+		return;
+	}
+
+
+	void tanhOnHost(const float *A, float*B, int nx) {
+
+		float* ib = B;
+
+		for (int ix = 0; ix < nx; ix++)
+		{
+			
+			ib[ix] =  (expf(A[ix]) - expf(-A[ix])) / (expf(A[ix]) + expf(-A[ix]));
+		}
+
+		return;
+	}
+
+	void softmaxOnHost(const float *A, float*B, int nx) {
+		
+		float* ib = B;
+		float* ic;
+		ic = (float*)malloc((nx / 3) * sizeof(float));
+
+		// compute sum
+		float sum = 0.0;
+		for (int ix = 0; ix < nx; ix++) {
+			ib[ix] = expf(A[ix]);
+		}
+
+		for (int ix = 0; ix < nx; ix++) {
+			sum += ib[ix];
+			if((ix + 1) % CATEGORIES == 0) {
+				ic[ix / 3] = sum;
+				sum = 0.0;
+			}
+		}
+
+		for (int ix = 0; ix < nx; ix++) {
+
+			ib[ix] = ib[ix] / ic[ix / 3];
+		}
+
+		free(ic);
+		ic = nullptr;
+	}
+	
+	
+	
+	void sigmoidOnHost(const float *A, float*B, int nx) {
+		
+		float* ib = B;
+
+		for (int ix = 0; ix < nx; ix++)
+		{
+
+			ib[ix] = expf(A[ix]) / (1.0f + expf(A[ix]));
+		}
+
+		return;
+	}
+
+	void tanhPrimeOnHost(const float* A, float* B, const int nx)
+	{
+		float* ib = B;
+
+		for (int ix = 0; ix < nx; ix++)
+			ib[ix] = 1.0f - A[ix] * A[ix];
+
+		return;
+	}
+
+	void sigmoidPrimeOnHost(const float* A, float* B, const int nx)
+	{
+		float* ib = B;
+
+		for (int ix = 0; ix < nx; ix++)
+			ib[ix] = A[ix] * (1.0f - A[ix]);
+
+		return;
+	}
+
+	float crossEntropyLossOnHost(float* matA, float* matB, const int nx, const int ny) {
+		float* ia = matA;
+		float* ib = matB;
+		
+		float* ic;
+		ic = (float*)malloc(ny * sizeof(float));
+
+		for (int iy = 0; iy < ny; iy++) {
+			ic[iy] = 0;
+			for (int ix = 0; ix < nx; ix++) {
+				int curIdx = iy * nx + ix;
+				if (ib[curIdx] != 0 && ia[curIdx] != 0) {
+					ic[iy] += -logf(ia[curIdx]);
+					//std::cout << ia[curIdx] << "," << ic[iy] << " ";
+				}
+			}
+
+		}
+
+		float avgcost = 0;
+		for (int i = 0; i < ny; i++) {
+			avgcost += ic[i];
+			//std::cout << ic[iy];
+		}
+		avgcost /= ny;
+		free(ic);
+		ic = nullptr;
+
+		return avgcost;
+	}
+
 	void testmatrixSum() {
 
 		std::string testtype = "Sum";
-		int nx = 1 << 14;
-		int ny = 1 << 14;
+		int nx = 1 << 5;
+		int ny = 1 << 5;
 
 		int nxy = nx * ny;
 		int nBytes = nxy * sizeof(float);
 		
-		float* matA, * matB, * matC;
+		float* matA, * matB, * cpuM;
 		matA = (float*)malloc(nBytes);
 		matB = (float*)malloc(nBytes);
-		matC = (float*)malloc(nBytes);
+		cpuM = (float*)malloc(nBytes);
 
 		initialData(matA, nxy);
 		initialData(matB, nxy);
 
-		sumMatrixOnHost(matA, matB, matC, nx, ny);
+		const float* tmpA = matA;
+		const float* tmpB = matB;
+
+		sumMatrixOnHost(tmpA, tmpB, cpuM, nx, ny);
 		util::matrixSum(matA, matB, ny, nx);
-		checkResult(matC, matA, nxy, testtype);
+		checkResult(cpuM, matA, nxy, testtype);
 
 		// free host memory
 		free(matA);
 		free(matB);
-		free(matC);
+		free(cpuM);
+		tmpA = nullptr;
+		tmpB = nullptr;
 
 		// reset device
 		CHECK(cudaDeviceReset());
@@ -229,28 +258,33 @@ namespace testUtil {
 	void testmatrixMulElem() {
 
 		std::string testtype = "MulElem";
-		int nx = 1 << 14;
-		int ny = 1 << 14;
+		int nx = 1 << 5;
+		int ny = 1 << 5;
 
 		int nxy = nx * ny;
 		int nBytes = nxy * sizeof(float);
 
-		float* matA, * matB, * matC;
+		float* matA, * matB, * cpuM;
 		matA = (float*)malloc(nBytes);
 		matB = (float*)malloc(nBytes);
-		matC = (float*)malloc(nBytes);
+		cpuM = (float*)malloc(nBytes);
 
 		initialData(matA, nxy);
 		initialData(matB, nxy);
 
-		mulElemMatrixOnHost(matA, matB, matC, nx, ny);
+		const float* tmpA = matA;
+		const float* tmpB = matB;
+
+		mulElemMatrixOnHost(tmpA, tmpB, cpuM, nx, ny);
 		util::matrixMulElem(matA, matB, ny, nx);
-		checkResult(matC, matA, nxy, testtype);
+		checkResult(cpuM, matA, nxy, testtype);
 
 		// free host memory
 		free(matA);
 		free(matB);
-		free(matC);
+		free(cpuM);
+		tmpA = nullptr;
+		tmpB = nullptr;
 
 		// reset device
 		CHECK(cudaDeviceReset());
@@ -277,7 +311,10 @@ namespace testUtil {
 		initialData(matA, nxy);
 		initialData(matB, nxz);
 
-		mulMatrixOnHost(matA, matB, cpuM, nx, ny, nz);
+		const float* tmpA = matA;
+		const float* tmpB = matB;
+
+		mulMatrixOnHost(tmpA, tmpB, cpuM, nx, ny, nz);
 		util::matrixMul(gpuM, matA, matB, ny, nx, nz);
 		checkResult(cpuM, gpuM, nyz, testtype);
 
@@ -286,6 +323,8 @@ namespace testUtil {
 		free(matB);
 		free(cpuM);
 		free(gpuM);
+		tmpA = nullptr;
+		tmpB = nullptr;
 
 		// reset device
 		CHECK(cudaDeviceReset());
@@ -295,23 +334,26 @@ namespace testUtil {
 	void testtanh() {
 
 		std::string testtype = "tanh";
-		int nx = 1 << 14;
+		int nx = 1 << 5;
 		int nBytes = nx * sizeof(float);
 
-		float* A, *B;
-		A = (float*)malloc(nBytes);
-		B = (float*)malloc(nBytes);
+		float* matA, *cpuM;
+		matA = (float*)malloc(nBytes);
+		cpuM = (float*)malloc(nBytes);
 
-		initialData(A, nx);
-		tanhOnHost(A, B, nx);
+		initialData(matA, nx);
 
-		util::tanh(A, nx);
-		checkResult(B, A, nx, testtype);
+		const float* tmpA = matA;
+
+		tanhOnHost(tmpA, cpuM, nx);
+		util::tanh(matA, nx);
+		checkResult(cpuM, matA, nx, testtype);
 
 
 		// free host memory
-		free(A);
-		free(B);
+		free(matA);
+		free(cpuM);
+		tmpA = nullptr;
 
 		// reset device
 		CHECK(cudaDeviceReset());
@@ -320,24 +362,25 @@ namespace testUtil {
 	void testsoftmax() {
 
 		std::string testtype = "softmax";
-		int nx = 1 << 14;
+		int nx = 300;
 		int nBytes = nx * sizeof(float);
 
-		float* A, *B;
-		A = (float*)malloc(nBytes);
-		B = (float*)malloc(nBytes);
+		float* matA, * cpuM;
+		matA = (float*)malloc(nBytes);
+		cpuM = (float*)malloc(nBytes);
 
-		initialData(A, nx);
-		softmaxOnHost(A, B, nx);
+		initialData(matA, nx);
 
-		util::softmax(A, nx);
-		checkResult(B, A, nx, testtype);
+		const float* tmpA = matA;
 
-
+		softmaxOnHost(tmpA, cpuM, nx);
+		util::softmax(matA, nx);
+		checkResult(cpuM, matA, nx, testtype);
 
 		// free host memory
-		free(A);
-		free(B);
+		free(matA);
+		free(cpuM);
+		tmpA = nullptr;
 
 		// reset device
 		CHECK(cudaDeviceReset());
@@ -346,23 +389,26 @@ namespace testUtil {
 	void testsigmoid() {
 
 		std::string testtype = "sigmoid";
-		int nx = 1 << 14;
+		int nx = 1 << 5;
 		int nBytes = nx * sizeof(float);
 
-		float* A, *B;
-		A = (float*)malloc(nBytes);
-		B = (float*)malloc(nBytes);
 
-		initialData(A, nx);
-		sigmoidOnHost(A, B, nx);
+		float* matA, * cpuM;
+		matA = (float*)malloc(nBytes);
+		cpuM = (float*)malloc(nBytes);
 
-		util::sigmoid(A, nx);
-		checkResult(B, A, nx, testtype);
+		initialData(matA, nx);
 
+		const float* tmpA = matA;
+
+		sigmoidOnHost(tmpA, cpuM, nx);
+		util::sigmoid(matA, nx);
+		checkResult(cpuM, matA, nx, testtype);
 
 		// free host memory
-		free(A);
-		free(B);
+		free(matA);
+		free(cpuM);
+		tmpA = nullptr;
 
 		// reset device
 		CHECK(cudaDeviceReset());
@@ -373,19 +419,24 @@ namespace testUtil {
 		std::string testtype = "tanhprime";
 		int nx = 1 << 5;
 
-		int nxB = nx * sizeof(float);
+		int nBytes = nx * sizeof(float);
 
-		float* matA, *cpuM;
-		matA = (float*)malloc(nxB);
-		cpuM = (float*)malloc(nxB);
+		float* matA, * cpuM;
+		matA = (float*)malloc(nBytes);
+		cpuM = (float*)malloc(nBytes);
 
 		initialData(matA, nx);
-		tanhPrimeOnHost(matA, cpuM, nx);
+
+		const float* tmpA = matA;
+
+		tanhPrimeOnHost(tmpA, cpuM, nx);
 		util::tanhPrime(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
+		// free host memory
 		free(matA);
 		free(cpuM);
+		tmpA = nullptr;
 
 		// reset device
 		CHECK(cudaDeviceReset());
@@ -396,24 +447,63 @@ namespace testUtil {
 		std::string testtype = "sigmoidprime";
 		int nx = 1 << 5;
 
-		int nxB = nx * sizeof(float);
+		int nBytes = nx * sizeof(float);
 
-		float* matA, *cpuM;
-		matA = (float*)malloc(nxB);
-		cpuM = (float*)malloc(nxB);
+		float* matA, * cpuM;
+		matA = (float*)malloc(nBytes);
+		cpuM = (float*)malloc(nBytes);
 
 		initialData(matA, nx);
-		sigmoidPrimeOnHost(matA, cpuM, nx);
+
+		const float* tmpA = matA;
+
+		sigmoidPrimeOnHost(tmpA, cpuM, nx);
 		util::sigmoidPrime(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
+		// free host memory
 		free(matA);
 		free(cpuM);
+		tmpA = nullptr;
 
 		// reset device
 		CHECK(cudaDeviceReset());
 	}
 
+	void testcrossEntropyLoss() {
+		std::string testtype = "crossEntropyLoss";
+		int nx = 1 << 5;
+		int ny = 1 << 5;
 
+		int nxy = nx * ny;
+		int nBytes = nxy * sizeof(float);
+
+		float* matA, * matB;
+		matA = (float*)malloc(nBytes);
+		matB = (float*)malloc(nBytes);
+
+		initialData(matA, nxy);
+		initialData(matB, nxy);
+
+		float cpuLoss = crossEntropyLossOnHost(matA, matB, nx, ny);
+		float gpuLoss = util::crossEntropyLoss(matA, matB, ny, nx, true);
+
+		if (abs(cpuLoss - gpuLoss) > 1.0E-3) {
+			std::cout << testtype << " fails" << std::endl;
+			std::cout << "cpuLoss:" << cpuLoss << " gpuLoss:" << gpuLoss << std::endl;
+			std::cout << "diff: " << cpuLoss - gpuLoss << "\n\n";
+		}
+		else {
+			std::cout << testtype << " success" << "\n\n";
+		}
+			
+
+		// free host memory
+		free(matA);
+		free(matB);
+
+		// reset device
+		CHECK(cudaDeviceReset());
+	}
 
 }
