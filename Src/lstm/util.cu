@@ -4,6 +4,7 @@
 *	This file defines the data structure for grid
 */
 #include <vector>
+#include <unordered_set>
 #include <iostream>
 #include <cmath>
 #include <cuda.h>
@@ -13,25 +14,27 @@
 #include "util.h"
 #include "../common/common.h"
 #define BLOCK_SIZE 32
-#define CATEGORIES 3
 
 
 namespace util {
 
-	__global__ void matrixSumGPU(float* d_A, float* d_B, int nx, int ny) {
+	__global__ void matrixCalElemGPU(float* d_A, float* d_B, int nx, int ny, char op) {
 		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
 		unsigned int iy = blockIdx.y;
 		unsigned int idx = iy * nx + ix;
 		if (ix < nx && iy < ny)
-			d_A[idx] += d_B[idx];
-	}
-
-	__global__ void matrixMulElemGPU(float* d_A, float* d_B, int nx, int ny) {
-		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
-		unsigned int iy = blockIdx.y;
-		unsigned int idx = iy * nx + ix;
-		if (ix < nx && iy < ny)
-			d_A[idx] *= d_B[idx];
+			switch (op)
+			{
+			case '+':
+				d_A[idx] += d_B[idx];
+				break;
+			case '-':
+				d_A[idx] -= d_B[idx];
+				break;
+			case '*':
+				d_A[idx] *= d_B[idx];
+				break;
+			}
 	}
 
 	__global__ void matrixMulGPU(float* out, float* d_A, float* d_B, int ny, int nx, int nz)
@@ -49,17 +52,17 @@ namespace util {
 		}
 	}
 
-	__global__ void softmaxGPU(float *d_A, int m) //problem fixed
+	__global__ void softmaxGPU(float *d_A, int n, const int categories) //problem fixed
 	{
 		int idx = threadIdx.x + blockIdx.x * blockDim.x;
-		if (idx < m) {
+		if (idx < n) {
 			float exp = expf(d_A[idx]);
 			d_A[idx] = exp;
 
 			float sum = 0;
 			// compute sum
-			int startIdx = idx / CATEGORIES * CATEGORIES;
-			int endIdx = startIdx + CATEGORIES;
+			int startIdx = idx / categories * categories;
+			int endIdx = startIdx + categories;
 			for (int i = startIdx; i < endIdx; ++i) {
 				sum += d_A[i];
 			}
@@ -118,33 +121,15 @@ namespace util {
 		}
 	}
 
-
-	void matrixSum(float* matA, float* matB, int m, int n) {
-		float* d_A, *d_B;
-
-		//malloc device memory
-		CHECK(cudaMalloc((void**)& d_A, m * n * sizeof(float)));
-		CHECK(cudaMalloc((void**)& d_B, m * n * sizeof(float)));
-
-		//transfer data from host to device
-		CHECK(cudaMemcpy(d_A, matA, m * n * sizeof(float), cudaMemcpyHostToDevice));
-		CHECK(cudaMemcpy(d_B, matB, m * n * sizeof(float), cudaMemcpyHostToDevice));
-
-		// invoke kernel
-		dim3 block(BLOCK_SIZE,1);
-		dim3 grid((n + block.x - 1) / block.x, m);
-		matrixSumGPU << <grid, block >> > (d_A, d_B, n, m);
-
-		//transfer data from device to host
-		CHECK(cudaMemcpy(matA, d_A, m * n * sizeof(float), cudaMemcpyDeviceToHost));
-
-		//free device memory
-		CHECK(cudaFree(d_A));
-		CHECK(cudaFree(d_B));
-	}
-
-	void matrixMulElem(float* matA, float* matB, int m, int n) {
+	void matrixCalElem(float* matA, float* matB, int m, int n, char op) {
 		float* d_A, * d_B;
+
+		//handle supported operation for + - *
+		std::unordered_set<char> validOp{'+','-','*'};
+		if (validOp.find(op) == validOp.end()) {
+			std::cout << "Unsupported operator " << op;
+			return;
+		}
 
 		//malloc device memory
 		CHECK(cudaMalloc((void**)& d_A, m * n * sizeof(float)));
@@ -157,7 +142,7 @@ namespace util {
 		// invoke kernel
 		dim3 block(BLOCK_SIZE, 1);
 		dim3 grid((n + block.x - 1) / block.x, m);
-		matrixMulElemGPU << <grid, block >> > (d_A, d_B, n, m);
+		matrixCalElemGPU << <grid, block >> > (d_A, d_B, n, m, op);
 
 		//transfer data from device to host
 		CHECK(cudaMemcpy(matA, d_A, m * n * sizeof(float), cudaMemcpyDeviceToHost));
@@ -186,41 +171,41 @@ namespace util {
 		cudaFree(d_B);
 	}
 
-	void softmax(float* A, int len){
+	void softmax(float* A, int n, const int categories){
 		float *d_A;
-		CHECK(cudaMalloc((void**)&d_A, len * sizeof(float)));
-		CHECK(cudaMemcpy(d_A, A, len * sizeof(float), cudaMemcpyHostToDevice));
+		CHECK(cudaMalloc((void**)&d_A, n * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, A, n * sizeof(float), cudaMemcpyHostToDevice));
 		dim3 block(BLOCK_SIZE);
-		dim3 grid((len + block.x - 1) / block.x);
-		softmaxGPU << <grid, block >> > (d_A, len);
-		CHECK(cudaMemcpy(A, d_A, len * sizeof(float), cudaMemcpyDeviceToHost));
+		dim3 grid((n + block.x - 1) / block.x);
+		softmaxGPU << <grid, block >> > (d_A, n, categories);
+		CHECK(cudaMemcpy(A, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
 		cudaFree(d_A);
 	
 	}
 	
-	void tanh(float* A, int len){
+	void tanh(float* A, int n){
 
 		float *d_A;
-		CHECK(cudaMalloc((void**)&d_A, len * sizeof(float)));
-		CHECK(cudaMemcpy(d_A, A, len * sizeof(float), cudaMemcpyHostToDevice));
+		CHECK(cudaMalloc((void**)&d_A, n * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, A, n * sizeof(float), cudaMemcpyHostToDevice));
 		dim3 block(BLOCK_SIZE);
-		dim3 grid((len + block.x - 1) / block.x);
-		tanhActivation << <grid, block >> > (d_A, len);
-		CHECK(cudaMemcpy(A, d_A, len * sizeof(float), cudaMemcpyDeviceToHost));
+		dim3 grid((n + block.x - 1) / block.x);
+		tanhActivation << <grid, block >> > (d_A, n);
+		CHECK(cudaMemcpy(A, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
 		cudaFree(d_A);
 	
 	}
 	
 	
-	void sigmoid(float *A, int len){
+	void sigmoid(float *A, int n){
 		
 		float *d_A;
-		CHECK(cudaMalloc((void**)&d_A, len * sizeof(float)));
-		CHECK(cudaMemcpy(d_A, A, len * sizeof(float), cudaMemcpyHostToDevice));
+		CHECK(cudaMalloc((void**)&d_A, n * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, A, n * sizeof(float), cudaMemcpyHostToDevice));
 		dim3 block(BLOCK_SIZE);
-		dim3 grid((len + block.x - 1) / block.x);
-		sigmoidActivation << <grid, block >> > (d_A, len);
-		CHECK(cudaMemcpy(A, d_A, len * sizeof(float), cudaMemcpyDeviceToHost));
+		dim3 grid((n + block.x - 1) / block.x);
+		sigmoidActivation << <grid, block >> > (d_A, n);
+		CHECK(cudaMemcpy(A, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
 		cudaFree(d_A);
 	}
 

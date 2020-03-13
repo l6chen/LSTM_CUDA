@@ -13,12 +13,11 @@
 namespace util {
 
 	//All matrix is m by n 
-	void matrixSum(float* matA, float* matB, int m, int n);
+	void matrixCalElem(float* matA, float* matB, int m, int n, char op);
 	void matrixMul(float* out, float* matA, float* matB, int m, int n, int k);//[m,n] * [n,k]
-	void matrixMulElem(float* matA, float* matB, int m, int n);
-	void softmax(float* A, int len);
-	void tanh(float* A, int len);
-	void sigmoid(float* A, int len);
+	void softmax(float* A, int n, const int categories);
+	void tanh(float* A, int n);
+	void sigmoid(float* A, int n);
 	void tanhPrime(float* matA, int n);
 	void sigmoidPrime(float* matA, int n);
 	float crossEntropyLoss(float* pred, float* oneHot, int m, int n, bool iftest = false);

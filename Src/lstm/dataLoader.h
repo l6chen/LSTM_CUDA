@@ -16,7 +16,7 @@ namespace dataLoader {
 		std::vector<std::string> _sentiments;
 		std::vector<std::string> _texts;
 	public:
-		DataLoader(std::string datasetDir) { _datasetDir = datasetDir; }
+		DataLoader(std::string datasetDir) : _datasetDir(datasetDir) {}
 		void load();
 		std::vector<std::string> getsentiments() { return _sentiments; }
 		std::vector<std::string> gettexts() { return _texts; }

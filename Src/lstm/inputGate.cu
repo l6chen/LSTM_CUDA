@@ -8,5 +8,5 @@
 #include "inputGate.h"
 
 namespace inputGate {
-    InputGate::InputGate(std::vector<std::vector<float>> W, std::vector<float> b){}
+    
 }

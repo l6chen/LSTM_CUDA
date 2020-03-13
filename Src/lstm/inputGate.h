@@ -8,15 +8,18 @@
 
 #include <vector>
 #include <iostream>
+#include "basicLayer.h"
 
 namespace inputGate {
-	class InputGate {
+	class InputGate: public basicLayer::BasicLayer {
 	private:
-        std::vector<std::vector<float>> W;
-        std::vector<float> b;
-
+        std::vector<std::vector<float>> Win;
+        std::vector<float> bin;
+		bool ifIn;
 	public:
-        InputGate(std::vector<std::vector<float>> W, std::vector<float> b);
+		InputGate(int embeds, int times, int hid, int cat, bool ifin) :
+			basicLayer::BasicLayer(embeds,times,hid,cat), ifIn(ifin) {}
+		void init() {}
 	};
 }
 

@@ -8,6 +8,7 @@
 #include <vector>
 #include "../lstm/dataLoader.h"
 #include "test_util.h"
+#include "test_Layer.h"
 #include <iomanip>
 #include <direct.h>
 
@@ -41,13 +42,12 @@ int main() {
 		std::cout << sentiments[i] << " " << tweets[i] << std::endl;
 	std::cout << *(sentiments.end() - 1) << " " << *(tweets.end() - 1) << std::endl;
 
-	//Test Matrix Sum
-	std::cout << DELIMITER << std::endl << "Test Matrix Sum" << std::endl;
-	testUtil::testmatrixSum();
-
-	//Test Matrix Elem Mul
-	std::cout << DELIMITER << std::endl << "Test Matrix Elem Mul" << std::endl;
-	testUtil::testmatrixMulElem();
+	//Test Elementwise operations
+	std::cout << DELIMITER << std::endl << "Test Elementwise operations" << std::endl;
+	testUtil::testmatrixCalElem('+');
+	testUtil::testmatrixCalElem('-');
+	testUtil::testmatrixCalElem('*');
+	//testUtil::testmatrixCalElem('/');//not supported
 
 	//Test Matrix Mul
 	std::cout << DELIMITER << std::endl << "Test Matrix Mul" << std::endl;
@@ -77,6 +77,11 @@ int main() {
 	//Test Cross Entropy Loss
 	std::cout << DELIMITER << std::endl << "Test Cross Entropy Loss" << std::endl;
 	testUtil::testcrossEntropyLoss();
+
+	//Test Basic Layer
+	std::cout << DELIMITER << std::endl << "Test Basic Layer" << std::endl;
+	testLayer::testLayerInit();
+
 
 	std::cout << "Test ends.";
 	system("PAUSE");

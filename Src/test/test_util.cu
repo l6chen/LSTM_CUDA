@@ -47,8 +47,8 @@ namespace testUtil {
 			std::cout << "Arrays do not match for " << testtype << "\n\n";
 	}
 
-	void sumMatrixOnHost(const float* A, const float* B, float* C, const int nx,
-		const int ny)
+	void matrixCalElemOnHost(const float* A, const float* B, float* C, const int nx,
+		const int ny, char op)
 	{
 
 		float* ic = C;
@@ -57,30 +57,18 @@ namespace testUtil {
 		{
 			for (int ix = 0; ix < nx; ix++)
 			{
-				ic[ix] = A[ix] + B[ix];
-				//A[ix] = 0; this goes wrong
-			}
-
-			A += nx;
-			B += nx;
-			ic += nx;
-		}
-
-		return;
-	}
-
-	void mulElemMatrixOnHost(const float* A, const float* B, float* C, const int nx,
-		const int ny)
-	{
-
-		float* ic = C;
-
-		for (int iy = 0; iy < ny; iy++)
-		{
-			for (int ix = 0; ix < nx; ix++)
-			{
-				ic[ix] = A[ix] * B[ix];
-
+				switch (op)
+				{
+				case '+':
+					ic[ix] = A[ix] + B[ix];
+					break;
+				case '-':
+					ic[ix] = A[ix] - B[ix];
+					break;
+				case '*':
+					ic[ix] = A[ix] * B[ix];
+					break;
+				}
 			}
 
 			A += nx;
@@ -201,7 +189,6 @@ namespace testUtil {
 				int curIdx = iy * nx + ix;
 				if (ib[curIdx] != 0 && ia[curIdx] != 0) {
 					ic[iy] += -logf(ia[curIdx]);
-					//std::cout << ia[curIdx] << "," << ic[iy] << " ";
 				}
 			}
 
@@ -219,45 +206,10 @@ namespace testUtil {
 		return avgcost;
 	}
 
-	void testmatrixSum() {
 
-		std::string testtype = "Sum";
-		int nx = 1 << 5;
-		int ny = 1 << 5;
-
-		int nxy = nx * ny;
-		int nBytes = nxy * sizeof(float);
-		
-		float* matA, * matB, * cpuM;
-		matA = (float*)malloc(nBytes);
-		matB = (float*)malloc(nBytes);
-		cpuM = (float*)malloc(nBytes);
-
-		initialData(matA, nxy);
-		initialData(matB, nxy);
-
-		const float* tmpA = matA;
-		const float* tmpB = matB;
-
-		sumMatrixOnHost(tmpA, tmpB, cpuM, nx, ny);
-		util::matrixSum(matA, matB, ny, nx);
-		checkResult(cpuM, matA, nxy, testtype);
-
-		// free host memory
-		free(matA);
-		free(matB);
-		free(cpuM);
-		tmpA = nullptr;
-		tmpB = nullptr;
-
-		// reset device
-		CHECK(cudaDeviceReset());
-		
-	}
-
-	void testmatrixMulElem() {
-
-		std::string testtype = "MulElem";
+	void testmatrixCalElem(char op) {
+		std::string opStr = std::string(1, op);
+		std::string testtype = "Elem " + opStr;
 		int nx = 1 << 5;
 		int ny = 1 << 5;
 
@@ -275,8 +227,8 @@ namespace testUtil {
 		const float* tmpA = matA;
 		const float* tmpB = matB;
 
-		mulElemMatrixOnHost(tmpA, tmpB, cpuM, nx, ny);
-		util::matrixMulElem(matA, matB, ny, nx);
+		matrixCalElemOnHost(tmpA, tmpB, cpuM, nx, ny, op);
+		util::matrixCalElem(matA, matB, ny, nx, op);
 		checkResult(cpuM, matA, nxy, testtype);
 
 		// free host memory
@@ -362,7 +314,8 @@ namespace testUtil {
 	void testsoftmax() {
 
 		std::string testtype = "softmax";
-		int nx = 300;
+		const int categories = 3;
+		int nx = 3 * (1 << 5);
 		int nBytes = nx * sizeof(float);
 
 		float* matA, * cpuM;
@@ -374,7 +327,7 @@ namespace testUtil {
 		const float* tmpA = matA;
 
 		softmaxOnHost(tmpA, cpuM, nx);
-		util::softmax(matA, nx);
+		util::softmax(matA, nx, categories);
 		checkResult(cpuM, matA, nx, testtype);
 
 		// free host memory

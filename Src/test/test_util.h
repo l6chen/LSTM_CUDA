@@ -21,8 +21,8 @@
 }
 
 namespace testUtil {
-	void testmatrixSum();
-	void testmatrixMulElem();
+
+	void testmatrixCalElem(char op);
 	void testmatrixMul();
 	void testtanh();
 	void testsigmoid();
@@ -31,6 +31,7 @@ namespace testUtil {
 	void testtanhPrime();
 	void testsigmoidPrime();
 	void testcrossEntropyLoss();
+
 }
 
 #endif /* TEST_UTIL_H_ */

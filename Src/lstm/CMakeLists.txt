@@ -15,7 +15,7 @@ file(GLOB HEADERS *.h *.cuh)
       lstm.cu
       sentimentAnalyzer.cpp
       dataLoader.cu
-      basicNeuron.cu
+      basicLayer.cu
       forgetGate.cu
       inputGate.cu
       outputGate.cu
