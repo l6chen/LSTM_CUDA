@@ -80,8 +80,11 @@ int main() {
 
 	//Test Basic Layer
 	std::cout << DELIMITER << std::endl << "Test Basic Layer" << std::endl;
-	testLayer::testLayerInit();
+	testLayer::testBasicLayer();
 
+	//Test Input Gate
+	std::cout << DELIMITER << std::endl << "Test Input Gate" << std::endl;
+	testLayer::testGateLayer();
 
 	std::cout << "Test ends.";
 	system("PAUSE");

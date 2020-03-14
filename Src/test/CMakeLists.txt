@@ -18,8 +18,8 @@ file(GLOB HEADERS
       test_main.cu
       test_util.cu
       test_layer.cu
+      ../lstm/gateLayer.cu
       ../lstm/basicLayer.cu
-      ../lstm/dense.cu
       ../lstm/dataLoader.cu
       ../lstm/util.cu
 

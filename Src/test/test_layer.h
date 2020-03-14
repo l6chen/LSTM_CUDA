@@ -9,9 +9,11 @@
 #include <vector>
 #include <iostream>
 #include "../lstm/basicLayer.h"
+#include "../lstm/gateLayer.h"
 
 namespace testLayer {
-	void testLayerInit();
+	void testBasicLayer();
+	void testGateLayer();
 }
 
 

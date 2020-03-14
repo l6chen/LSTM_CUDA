@@ -11,7 +11,7 @@
 
 
 namespace testLayer {
-	void testLayerInit() {
+	void testBasicLayer() {
 		basicLayer::BasicLayer* bd = new basicLayer::BasicLayer(0, 2, 4, 5);
 		bd->showVar();
 		float* a = new float[3];
@@ -29,6 +29,28 @@ namespace testLayer {
 		delete[] a;
 		delete[] b;
 		delete bd;
+		std::cout << "\n\n";
+	}
+	void testGateLayer() {
+		gateLayer::GateLayer* ig = new gateLayer::GateLayer(5, 5, 10, 3);
+		ig->showVar();
+		ig->showW();
+		ig->showb();
+		float* x = new float[5];
+		float* h = new float[10];
+		for (int i = 0; i < 5; i++) {
+			x[i] = 0.2f;
+		}
+		for (int i = 0; i < 10; i++) {
+			h[i] = 0.4f;
+		}
+		float* out = ig->forward(h,x);
+		for (int i = 0; i < 10; i++) {
+			std::cout << out[i] << " ";
+		}
+		delete[] h;
+		delete[] x;
+		delete ig;
 		std::cout << "\n\n";
 	}
 }

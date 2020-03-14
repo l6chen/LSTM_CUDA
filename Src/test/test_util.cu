@@ -248,7 +248,7 @@ namespace testUtil {
 		std::string testtype = "Mul";
 		int ny = 1 << 3;
 		int nx = 1 << 4;
-		int nz = 1 << 5;
+		int nz = 1;
 
 		int nxy = nx * ny, nyz = ny * nz, nxz = nx * nz;
 		int nxyB = nxy * sizeof(float), nyzB = nyz * sizeof(float),

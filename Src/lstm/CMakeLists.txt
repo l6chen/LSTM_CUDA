@@ -16,10 +16,8 @@ file(GLOB HEADERS *.h *.cuh)
       sentimentAnalyzer.cpp
       dataLoader.cu
       basicLayer.cu
-      forgetGate.cu
-      inputGate.cu
-      outputGate.cu
-      moduleGate.cu
+      gateLayer.cu
+      denseLayer.cu
       util.cu
 
       OPTIONS --cudart=shared  -arch sm_52 -use_fast_math
