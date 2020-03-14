@@ -9,3 +9,8 @@ Implement LSTM purely with CUDA used to analyze sentiment
 
 ## Datasets
 https://www.kaggle.com/crowdflower/first-gop-debate-twitter-sentiment
+
+## Updates
+1. Finished GateLayer Forward Algorithm
+2. Know that four gates are objects of class GateLayer. The GateLayer and DenseLayer should be child of Basic Layer.
+3. Need to understand the step of backward update.
