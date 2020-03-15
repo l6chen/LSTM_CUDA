@@ -13,6 +13,8 @@
 #include <curand_kernel.h>
 
 #define CATEGORIES 3
+#define INDEX(ROW, COL, INNER) ((ROW) * (INNER) + (COL))
+
 
 namespace testUtil {
 	void initialData(float* ip, const int size)
@@ -46,6 +48,25 @@ namespace testUtil {
 		else
 			std::cout << "Arrays do not match for " << testtype << "\n\n";
 	}
+
+
+	void transposeHost(const float *A, float *B, const int nrows, const int ncols)
+	{
+		for (int iy = 0; iy < nrows; ++iy)
+		{
+			for (int ix = 0; ix < ncols; ++ix)
+			{
+				B[INDEX(ix, iy, nrows)] = A[INDEX(iy, ix, ncols)];
+			}
+		}
+	}
+
+
+
+
+
+
+
 
 	void matrixCalElemOnHost(const float* A, const float* B, float* C, const int nx,
 		const int ny, char op)
@@ -459,4 +480,36 @@ namespace testUtil {
 		CHECK(cudaDeviceReset());
 	}
 
+
+	void testmatTranspose() {
+
+		std::string testtype = "Transpose";
+		int ny = 1 << 3;
+		int nx = 1 << 4;
+
+		int nxy = nx * ny;
+		int nBytes = nxy * sizeof(float);
+
+		float* matA, *cpuM;
+		matA = (float*)malloc(nBytes);
+		cpuM = (float*)malloc(nBytes);
+
+
+		initialData(matA, nxy);
+
+		const float* tmpA = matA;
+
+		transposeHost(tmpA, cpuM, ny, nx);
+		util::matrixTranspose(matA, ny, nx);
+		checkResult(cpuM, matA, nxy, testtype);
+
+
+		// free host memory
+		free(matA);
+		tmpA = nullptr;
+
+		// reset device
+		CHECK(cudaDeviceReset());
+
+	}
 }

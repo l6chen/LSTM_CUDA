@@ -52,7 +52,10 @@ int main() {
 	//Test Matrix Mul
 	std::cout << DELIMITER << std::endl << "Test Matrix Mul" << std::endl;
 	testUtil::testmatrixMul();
-	
+
+	//Test transpose
+	std::cout << DELIMITER << std::endl << "Test Matrix Tanspose" << std::endl;
+	testUtil::testmatTranspose();	
 
 	//Test tanh
 	std::cout << DELIMITER << std::endl << "Test tanh" << std::endl;
@@ -73,6 +76,8 @@ int main() {
 	//Test Sigmoid Prime
 	std::cout << DELIMITER << std::endl << "Test Sigmoid Prime" << std::endl;
 	testUtil::testsigmoidPrime();
+
+
 
 	//Test Cross Entropy Loss
 	std::cout << DELIMITER << std::endl << "Test Cross Entropy Loss" << std::endl;

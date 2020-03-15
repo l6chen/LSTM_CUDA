@@ -27,6 +27,7 @@ namespace testUtil {
 	void testtanh();
 	void testsigmoid();
 	void testsoftmax();
+	void testmatTranspose();
 	void testmatrixMul();
 	void testtanhPrime();
 	void testsigmoidPrime();
