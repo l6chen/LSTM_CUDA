@@ -13,9 +13,14 @@
 namespace util {
 
 	//All matrix is m by n 
-	void matrixCalElem(float* matA, float* matB, int m, int n, char op);
-	void matrixMul(float* out, float* matA, float* matB, int m, int n, int k);//[m,n] * [n,k]
-	void matrixTranspose(float* matA, int height, int width);
+	
+	float* matElem(const float* matA, const float* matB, int m, int n, char op);
+	float* matTrans(const float* matA, int height, int width);
+	float* matMul(const float* matA, const float* matB, int m, int n, int k);
+	float* matMulScal(const float* matA, float scal, int m, int n);
+	void matMul_inplace(float* out, float* matA, float* matB, int m, int n, int k);//[m,n] * [n,k]
+	void matElem_inplace(float* matA, float* matB, int m, int n, char op);
+	void matTrans_inplace(float* matA, int height, int width);
 	void softmax(float* A, int n, const int categories);
 	void tanh(float* A, int n);
 	void sigmoid(float* A, int n);

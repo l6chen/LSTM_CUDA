@@ -18,7 +18,7 @@
 
 namespace util {
 
-	__global__ void matrixCalElemGPU(float* d_A, float* d_B, int nx, int ny, char op) {
+	__global__ void matElemGPU(float* d_A, float* d_B, int nx, int ny, char op) {
 		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
 		unsigned int iy = blockIdx.y;
 		unsigned int idx = iy * nx + ix;
@@ -37,7 +37,15 @@ namespace util {
 			}
 	}
 
-	__global__ void matrixMulGPU(float* out, float* d_A, float* d_B, int ny, int nx, int nz)
+	__global__ void matMulScalGPU(float* d_A, float* d_S, int nx, int ny) {
+		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
+		unsigned int iy = blockIdx.y;
+		unsigned int idx = iy * nx + ix;
+		if (ix < nx && iy < ny)
+			d_A[idx] *= d_S[0];
+	}
+
+	__global__ void matMulGPU(float* out, float* d_A, float* d_B, int ny, int nx, int nz)
 	{
 		int iy = blockIdx.y * blockDim.y + threadIdx.y;
 		int iz = blockIdx.x * blockDim.x + threadIdx.x;
@@ -131,10 +139,9 @@ namespace util {
 		}
 	}
 
-	
+	/*********************************Inplace Matrix Functions*******************************/
 
-
-	void matrixCalElem(float* matA, float* matB, int m, int n, char op) {
+	void matElem_inplace(float* matA, float* matB, int m, int n, char op) {
 		float* d_A, * d_B;
 
 		//handle supported operation for + - *
@@ -155,7 +162,7 @@ namespace util {
 		// invoke kernel
 		dim3 block(BLOCK_SIZE, 1);
 		dim3 grid((n + block.x - 1) / block.x, m);
-		matrixCalElemGPU << <grid, block >> > (d_A, d_B, n, m, op);
+		matElemGPU << <grid, block >> > (d_A, d_B, n, m, op);
 
 		//transfer data from device to host
 		CHECK(cudaMemcpy(matA, d_A, m * n * sizeof(float), cudaMemcpyDeviceToHost));
@@ -165,7 +172,24 @@ namespace util {
 		CHECK(cudaFree(d_B));
 	}
 
-	void matrixMul(float* out, float* matA, float* matB, int m, int n, int k) {
+	void matTrans_inplace(float* matA, int height, int width) {
+
+		dim3 block(BLOCK_SIZE, BLOCK_SIZE);
+		dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
+		float* d_A, * d_out;
+
+		CHECK(cudaMalloc((void**)& d_A, height * width * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_out, height * width * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, matA, height * width * sizeof(float), cudaMemcpyHostToDevice));
+		TransposeGPU << <grid, block >> > (d_out, d_A, height, width);
+		CHECK(cudaMemcpy(matA, d_out, height * width * sizeof(float), cudaMemcpyDeviceToHost));
+
+		cudaFree(d_A);
+		cudaFree(d_out);
+
+	}
+
+	void matMul_inplace(float* out, float* matA, float* matB, int m, int n, int k) {
 		float* d_out, * d_A, * d_B;
 		CHECK(cudaMalloc((void**)& d_out, m * k * sizeof(float)));
 		CHECK(cudaMalloc((void**)& d_A, m * n * sizeof(float)));
@@ -177,13 +201,118 @@ namespace util {
 		dim3 block(BLOCK_SIZE, BLOCK_SIZE);
 		dim3 grid((k + block.x - 1) / block.x, (m + block.y - 1) / block.y);
 
-		matrixMulGPU << <grid, block >> > (d_out, d_A, d_B, m, n, k);
+		matMulGPU << <grid, block >> > (d_out, d_A, d_B, m, n, k);
 		CHECK(cudaMemcpy(out, d_out, m * k * sizeof(float), cudaMemcpyDeviceToHost));
 		cudaFree(d_out);
 		cudaFree(d_A);
 		cudaFree(d_B);
 	}
 
+	/*********************************Outplace Matrix Functions*******************************/
+
+	float* matElem(const float* matA, const float* matB, int m, int n, char op) {
+		float* d_A, * d_B;
+		float* out = new float[m * n];
+		//handle supported operation for + - *
+		std::unordered_set<char> validOp{ '+','-','*' };
+		if (validOp.find(op) == validOp.end()) {
+			std::cout << "Unsupported operator " << op;
+			return nullptr;
+		}
+
+		//malloc device memory
+		CHECK(cudaMalloc((void**)& d_A, m * n * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_B, m * n * sizeof(float)));
+
+		//transfer data from host to device
+		CHECK(cudaMemcpy(d_A, matA, m * n * sizeof(float), cudaMemcpyHostToDevice));
+		CHECK(cudaMemcpy(d_B, matB, m * n * sizeof(float), cudaMemcpyHostToDevice));
+
+		// invoke kernel
+		dim3 block(BLOCK_SIZE, 1);
+		dim3 grid((n + block.x - 1) / block.x, m);
+		matElemGPU << <grid, block >> > (d_A, d_B, n, m, op);
+
+		//transfer data from device to host
+		CHECK(cudaMemcpy(out, d_A, m * n * sizeof(float), cudaMemcpyDeviceToHost));
+
+		//free device memory
+		CHECK(cudaFree(d_A));
+		CHECK(cudaFree(d_B));
+
+		return out;
+	}
+
+	float* matMulScal(const float* matA, float scal, int m, int n) {
+		float* d_A, * d_S;
+		float* out = new float[m * n];
+
+		//malloc device memory
+		CHECK(cudaMalloc((void**)& d_A, m * n * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_S, 1 * sizeof(float)));
+
+		//transfer data from host to device
+		CHECK(cudaMemcpy(d_A, matA, m * n * sizeof(float), cudaMemcpyHostToDevice));
+		CHECK(cudaMemcpy(d_S, &scal, 1 * sizeof(float), cudaMemcpyHostToDevice));
+
+		// invoke kernel
+		dim3 block(BLOCK_SIZE, 1);
+		dim3 grid((n + block.x - 1) / block.x, m);
+		matMulScalGPU << <grid, block >> > (d_A, d_S, n, m);
+
+		//transfer data from device to host
+		CHECK(cudaMemcpy(out, d_A, m * n * sizeof(float), cudaMemcpyDeviceToHost));
+
+		//free device memory
+		CHECK(cudaFree(d_A));
+		CHECK(cudaFree(d_S));
+
+		return out;
+	}
+
+	float* matMul(const float* matA, const float* matB, int m, int n, int k) {
+		float* out = new float[m * k];
+		float* d_out, * d_A, * d_B;
+		CHECK(cudaMalloc((void**)& d_out, m * k * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_A, m * n * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_B, n * k * sizeof(float)));
+
+		CHECK(cudaMemcpy(d_A, matA, m * n * sizeof(float), cudaMemcpyHostToDevice));
+		CHECK(cudaMemcpy(d_B, matB, n * k * sizeof(float), cudaMemcpyHostToDevice));
+
+		dim3 block(BLOCK_SIZE, BLOCK_SIZE);
+		dim3 grid((k + block.x - 1) / block.x, (m + block.y - 1) / block.y);
+
+		matMulGPU << <grid, block >> > (d_out, d_A, d_B, m, n, k);
+		CHECK(cudaMemcpy(out, d_out, m * k * sizeof(float), cudaMemcpyDeviceToHost));
+		cudaFree(d_out);
+		cudaFree(d_A);
+		cudaFree(d_B);
+		return out;
+	}
+
+
+	float* matTrans(const float* matA, int height, int width) {
+
+		float* out = new float[height * width];
+		dim3 block(BLOCK_SIZE, BLOCK_SIZE);
+		dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
+		float* d_A, * d_out;
+
+		CHECK(cudaMalloc((void**)& d_A, height * width * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_out, height * width * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, matA, height * width * sizeof(float), cudaMemcpyHostToDevice));
+		TransposeGPU << <grid, block >> > (d_out, d_A, height, width);
+		CHECK(cudaMemcpy(out, d_out, height * width * sizeof(float), cudaMemcpyDeviceToHost));
+
+		cudaFree(d_A);
+		cudaFree(d_out);
+
+		return out;
+	}
+
+
+	/*********************************Activation Functions*******************************/
 	void softmax(float* A, int n, const int categories){
 		float *d_A;
 		CHECK(cudaMalloc((void**)&d_A, n * sizeof(float)));
@@ -251,19 +380,6 @@ namespace util {
 		cudaFree(d_A);
 	}
 
-	void sigmoidPrime(float* matA, int n) {
-		float* d_A;
-		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
-		CHECK(cudaMemcpy(d_A, matA, n * sizeof(float), cudaMemcpyHostToDevice));
-
-		dim3 block(BLOCK_SIZE);
-		dim3 grid((n + block.x - 1) / block.x);
-
-		sigmoidPrimeGPU << <grid, block >> > (d_A, n);
-		CHECK(cudaMemcpy(matA, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
-		cudaFree(d_A);
-	}
-
 	float crossEntropyLoss(float* pred, float* oneHot, int m, int n, bool iftest) { 
 		float* d_pred, *d_oneHot, *d_out;
 		float* out = (float*)malloc(m * sizeof(float));
@@ -289,27 +405,6 @@ namespace util {
 		cudaFree(d_out);
 		return avgcost;
 	}
-
-	void matrixTranspose(float* matA, int height, int width) {
-
-		dim3 block(BLOCK_SIZE, BLOCK_SIZE);
-		dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
-		float *d_A, *d_out;
-
-		CHECK(cudaMalloc((void**)&d_A, height * width * sizeof(float)));
-		CHECK(cudaMalloc((void**)&d_out, height * width * sizeof(float)));
-		CHECK(cudaMemcpy(d_A, matA, height * width * sizeof(float), cudaMemcpyHostToDevice));
-		TransposeGPU << <grid, block >> > (d_out, d_A, height, width);
-		CHECK(cudaMemcpy(matA, d_out, height * width * sizeof(float), cudaMemcpyDeviceToHost));
-
-		cudaFree(d_A);
-		cudaFree(d_out);
-	
-	}
-
-
-
-
 
 
 

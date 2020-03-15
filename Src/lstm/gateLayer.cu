@@ -5,60 +5,100 @@
 */
 #include <iostream>
 #include <string>
-#include "gateLayer.h"
+#include "gateLayer.h"//actually output gate
 
 #define BLOCK_SIZE 32
 
 namespace gateLayer {
 
 	void GateLayer::init() {
-		int Wlen = hiddenStates * (hiddenStates + embedSize);
-		int blen = hiddenStates + embedSize;
+		Whlen = hiddenStates * hiddenStates;
+		Wxlen = hiddenStates * embedSize;
+		blen = hiddenStates;
 
-		Win = new float[Wlen];
-		bin = new float[blen];
+		Wh = new float[Whlen];
+		Wx = new float[Wxlen];
+		b = new float[blen];
 
-		weightbiasTruncInit(Win, bin, Wlen, blen);
+		weightbiasTruncInit(Wh, Wx, b, Whlen, Wxlen, blen);
 
-		std::cout << "debuginfo: gateLayer initiated." << std::endl;
+	}
+
+	GateLayer::~GateLayer() {
+		delete[] Wh;
+		delete[] Wx;
+		delete[] b;
+		std::cout << "debuginfo: gate is out" << std::endl;
 	}
 
 	float* GateLayer::forward(float* h, float* x) {
-		float* hx = concatVec(h, x, hiddenStates, embedSize);
-		int inlen = hiddenStates;
-		float* in = new float[inlen];
-		util::matrixMul(in, Win, hx, hiddenStates, hiddenStates + embedSize, 1);
-		free(hx);
-		util::matrixCalElem(in, bin, 1, hiddenStates + embedSize, '+');
-		util::sigmoid(in, hiddenStates + embedSize);
-		return in;
+		
+		float* wh = util::matMul(Wh, h, hiddenStates, hiddenStates, 1);
+		float* wx = util::matMul(Wx, x, hiddenStates, embedSize, 1);
+		float* out = util::matElem(util::matElem(wh, wx, hiddenStates, 1, '+'),
+			b, hiddenStates, 1, '+');
+		//TODO::make activation a class
+		util::sigmoid(out, hiddenStates);
+
+		return out;
 	}
 	float* GateLayer::backward(float* dh, float* x) {
 		return nullptr;
 	}
-	void GateLayer::updateWb() {}
-	void GateLayer::calLoss(float* dh, float* x) const {}
-	void GateLayer::calGrad(float* dh, float* x) const {}
 
+	float* GateLayer::calLoss(float* dh, float* c, float* out) const {
+
+		util::sigmoidPrime(out, hiddenStates);
+		util::tanh(c, hiddenStates);
+		float* delta = util::matElem(util::matElem(dh, c, 
+			hiddenStates, 1, '+'), out, hiddenStates, 1, '+');
+		return delta;
+
+	}
+	float* GateLayer::calWhGrad(float* hpre, float* delta) const {
+		float* hpreT = hpre;//actually same for vector.
+		float* Wh_grad = util::matMul(delta, hpreT, hiddenStates, 1, hiddenStates);
+		return Wh_grad;
+	}
+
+	float* GateLayer::calWxGrad(float* x, float* out) const {
+		float* xT = x;
+		float* Wx_grad = util::matMul(out, xT, hiddenStates, 1, embedSize);
+		return Wx_grad;
+	}
+
+	float* GateLayer::calbGrad(float* deltaf) const {
+		float* b_grad = deltaf;
+		return b_grad;
+	}
+
+	void GateLayer::updateWb(float lr, float* Wh_grad, float* Wx_grad, float* b_grad) {
+		int h = hiddenStates;
+		int e = embedSize;
+		Wh = util::matElem(Wh, util::matMulScal(Wh_grad, lr, h, h), h, h, '+');
+		Wx = util::matElem(Wh, util::matMulScal(Wx_grad, lr, h, e), h, e, '+');
+		b = util::matElem(b, util::matMulScal(b_grad, lr, h, h), h, h, '+');
+	}
 	//Showing information
 	void GateLayer::showW() const {
-		int Wlen = hiddenStates * (hiddenStates + embedSize);
-		for (int i = 0; i < Wlen; i++)
-			std::cout << Win[i] << " ";
+		for (int i = 0; i < Whlen; i++)
+			std::cout << Wh[i] << " ";
+		std::cout << std::endl;
+		for (int i = 0; i < Wxlen; i++)
+			std::cout << Wx[i] << " ";
 		std::cout << std::endl;
 	}
 
 	void GateLayer::showb() const {
-		int blen = hiddenStates + embedSize;
 		for (int i = 0; i < blen; i++)
-			std::cout << bin[i] << " ";
+			std::cout << b[i] << " ";
 		std::cout << std::endl;
 	}
 
-	void GateLayer::showforward(float* in) const {
-		int inlen = hiddenStates + embedSize;
-		for (int i = 0; i < inlen; i++)
-			std::cout << in[i] << " ";
+	void GateLayer::showforward(float* out) const {
+		int outlen = hiddenStates;
+		for (int i = 0; i < outlen; i++)
+			std::cout << out[i] << " ";
 		std::cout << std::endl;
 	}
 }

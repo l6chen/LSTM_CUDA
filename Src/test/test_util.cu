@@ -50,29 +50,21 @@ namespace testUtil {
 	}
 
 
-	void transposeHost(const float *A, float *B, const int nrows, const int ncols)
+	void transposeHost(float *out, const float *in, const int nrows, const int ncols)
 	{
 		for (int iy = 0; iy < nrows; ++iy)
 		{
 			for (int ix = 0; ix < ncols; ++ix)
 			{
-				B[INDEX(ix, iy, nrows)] = A[INDEX(iy, ix, ncols)];
+				out[INDEX(ix, iy, nrows)] = in[INDEX(iy, ix, ncols)];
 			}
 		}
 	}
 
 
-
-
-
-
-
-
-	void matrixCalElemOnHost(const float* A, const float* B, float* C, const int nx,
+	void matElemOnHost(float* out, const float* A, const float* B, const int nx,
 		const int ny, char op)
 	{
-
-		float* ic = C;
 
 		for (int iy = 0; iy < ny; iy++)
 		{
@@ -81,29 +73,37 @@ namespace testUtil {
 				switch (op)
 				{
 				case '+':
-					ic[ix] = A[ix] + B[ix];
+					out[ix] = A[ix] + B[ix];
 					break;
 				case '-':
-					ic[ix] = A[ix] - B[ix];
+					out[ix] = A[ix] - B[ix];
 					break;
 				case '*':
-					ic[ix] = A[ix] * B[ix];
+					out[ix] = A[ix] * B[ix];
 					break;
 				}
 			}
 
 			A += nx;
 			B += nx;
-			ic += nx;
+			out += nx;
 		}
 
 		return;
 	}
 
-	void mulMatrixOnHost(const float* A, const float* B, float* C, const int nx,
+	void matMulScalOnHost(float* out, const float* A, float scal, const int nx, const int ny) {
+		for (int iy = 0; iy < ny; iy++) {
+			for (int ix = 0; ix < nx; ix++) {
+				out[iy * nx + ix] = A[iy * nx + ix] * scal;
+			}
+		}
+		return;
+	}
+
+	void mulMatrixOnHost(float* out, const float* A, const float* B, const int nx,
 		const int ny, const int nz)
 	{
-		float* ic = C;
 
 		for (int iy = 0; iy < ny; iy++)
 		{
@@ -112,7 +112,7 @@ namespace testUtil {
 				float sum = 0;
 				for (int ix = 0; ix < nx; ix++)
 					sum += A[iy * nx + ix] * B[ix * nz + iz];
-				ic[iy * nz + iz] = sum;
+				out[iy * nz + iz] = sum;
 			}
 		}
 
@@ -120,33 +120,30 @@ namespace testUtil {
 	}
 
 
-	void tanhOnHost(const float *A, float*B, int nx) {
-
-		float* ib = B;
+	void tanhOnHost(float* out, const float *A, int nx) {
 
 		for (int ix = 0; ix < nx; ix++)
 		{
 			
-			ib[ix] =  (expf(A[ix]) - expf(-A[ix])) / (expf(A[ix]) + expf(-A[ix]));
+			out[ix] =  (expf(A[ix]) - expf(-A[ix])) / (expf(A[ix]) + expf(-A[ix]));
 		}
 
 		return;
 	}
 
-	void softmaxOnHost(const float *A, float*B, int nx) {
+	void softmaxOnHost(float* out, const float *A, int nx) {
 		
-		float* ib = B;
 		float* ic;
 		ic = (float*)malloc((nx / 3) * sizeof(float));
 
 		// compute sum
 		float sum = 0.0;
 		for (int ix = 0; ix < nx; ix++) {
-			ib[ix] = expf(A[ix]);
+			out[ix] = expf(A[ix]);
 		}
 
 		for (int ix = 0; ix < nx; ix++) {
-			sum += ib[ix];
+			sum += out[ix];
 			if((ix + 1) % CATEGORIES == 0) {
 				ic[ix / 3] = sum;
 				sum = 0.0;
@@ -155,7 +152,7 @@ namespace testUtil {
 
 		for (int ix = 0; ix < nx; ix++) {
 
-			ib[ix] = ib[ix] / ic[ix / 3];
+			out[ix] = out[ix] / ic[ix / 3];
 		}
 
 		free(ic);
@@ -164,35 +161,31 @@ namespace testUtil {
 	
 	
 	
-	void sigmoidOnHost(const float *A, float*B, int nx) {
-		
-		float* ib = B;
+	void sigmoidOnHost(float* out, const float *A, int nx) {
 
 		for (int ix = 0; ix < nx; ix++)
 		{
 
-			ib[ix] = expf(A[ix]) / (1.0f + expf(A[ix]));
+			out[ix] = expf(A[ix]) / (1.0f + expf(A[ix]));
 		}
 
 		return;
 	}
 
-	void tanhPrimeOnHost(const float* A, float* B, const int nx)
+	void tanhPrimeOnHost(float* out, const float* A, const int nx)
 	{
-		float* ib = B;
 
 		for (int ix = 0; ix < nx; ix++)
-			ib[ix] = 1.0f - A[ix] * A[ix];
+			out[ix] = 1.0f - A[ix] * A[ix];
 
 		return;
 	}
 
-	void sigmoidPrimeOnHost(const float* A, float* B, const int nx)
+	void sigmoidPrimeOnHost(float* out, const float* A, const int nx)
 	{
-		float* ib = B;
 
 		for (int ix = 0; ix < nx; ix++)
-			ib[ix] = A[ix] * (1.0f - A[ix]);
+			out[ix] = A[ix] * (1.0f - A[ix]);
 
 		return;
 	}
@@ -228,7 +221,7 @@ namespace testUtil {
 	}
 
 
-	void testmatrixCalElem(char op) {
+	void testmatElem(char op) {
 		std::string opStr = std::string(1, op);
 		std::string testtype = "Elem " + opStr;
 		int nx = 1 << 5;
@@ -248,9 +241,11 @@ namespace testUtil {
 		const float* tmpA = matA;
 		const float* tmpB = matB;
 
-		matrixCalElemOnHost(tmpA, tmpB, cpuM, nx, ny, op);
-		util::matrixCalElem(matA, matB, ny, nx, op);
+		matElemOnHost(cpuM, tmpA, tmpB, nx, ny, op);
+		float* gpuM = util::matElem(matA, matB, ny, nx, op);
+		util::matElem_inplace(matA, matB, ny, nx, op);
 		checkResult(cpuM, matA, nxy, testtype);
+		checkResult(cpuM, gpuM, nxy, testtype);
 
 		// free host memory
 		free(matA);
@@ -264,7 +259,39 @@ namespace testUtil {
 
 	}
 
-	void testmatrixMul() {
+	void testmatMulScal() {
+
+		std::string testtype = "Mul Scal";
+		int nx = 1 << 5;
+		int ny = 1 << 5;
+
+		int nxy = nx * ny;
+		int nBytes = nxy * sizeof(float);
+
+		float* matA, * cpuM;
+		float scal = 0.5f;
+		matA = (float*)malloc(nBytes);
+		cpuM = (float*)malloc(nBytes);
+
+		initialData(matA, nxy);
+
+		const float* tmpA = matA;
+
+		matMulScalOnHost(cpuM, tmpA, scal, nx, ny);
+		float* gpuM = util::matMulScal(matA, scal, ny, nx);
+		checkResult(cpuM, gpuM, nxy, testtype);
+
+		// free host memory
+		free(matA);
+		free(cpuM);
+		tmpA = nullptr;
+
+		// reset device
+		CHECK(cudaDeviceReset());
+
+	}
+
+	void testmatMul() {
 
 		std::string testtype = "Mul";
 		int ny = 1 << 3;
@@ -287,9 +314,11 @@ namespace testUtil {
 		const float* tmpA = matA;
 		const float* tmpB = matB;
 
-		mulMatrixOnHost(tmpA, tmpB, cpuM, nx, ny, nz);
-		util::matrixMul(gpuM, matA, matB, ny, nx, nz);
+		mulMatrixOnHost(cpuM, tmpA, tmpB, nx, ny, nz);
+		util::matMul_inplace(gpuM, matA, matB, ny, nx, nz);
+		float* outplace = util::matMul(matA, matB, ny, nx, nz);
 		checkResult(cpuM, gpuM, nyz, testtype);
+		checkResult(cpuM, outplace, nyz, testtype);
 
 		// free host memory
 		free(matA);
@@ -298,6 +327,41 @@ namespace testUtil {
 		free(gpuM);
 		tmpA = nullptr;
 		tmpB = nullptr;
+
+		// reset device
+		CHECK(cudaDeviceReset());
+
+	}
+
+
+	void testmatTranspose() {
+
+		std::string testtype = "Transpose";
+		int ny = 1 << 3;
+		int nx = 1 << 4;
+
+		int nxy = nx * ny;
+		int nBytes = nxy * sizeof(float);
+
+		float* matA, * cpuM;
+		matA = (float*)malloc(nBytes);
+		cpuM = (float*)malloc(nBytes);
+
+
+		initialData(matA, nxy);
+
+		const float* tmpA = matA;
+
+		transposeHost(cpuM, tmpA, ny, nx);
+		float* gpuM = util::matTrans(matA, ny, nx);
+		util::matTrans_inplace(matA, ny, nx);
+		checkResult(cpuM, matA, nxy, testtype);
+		checkResult(cpuM, gpuM, nxy, testtype);
+
+
+		// free host memory
+		free(matA);
+		tmpA = nullptr;
 
 		// reset device
 		CHECK(cudaDeviceReset());
@@ -318,7 +382,7 @@ namespace testUtil {
 
 		const float* tmpA = matA;
 
-		tanhOnHost(tmpA, cpuM, nx);
+		tanhOnHost(cpuM, tmpA, nx);
 		util::tanh(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
@@ -347,7 +411,7 @@ namespace testUtil {
 
 		const float* tmpA = matA;
 
-		softmaxOnHost(tmpA, cpuM, nx);
+		softmaxOnHost(cpuM, tmpA, nx);
 		util::softmax(matA, nx, categories);
 		checkResult(cpuM, matA, nx, testtype);
 
@@ -375,7 +439,7 @@ namespace testUtil {
 
 		const float* tmpA = matA;
 
-		sigmoidOnHost(tmpA, cpuM, nx);
+		sigmoidOnHost(cpuM, tmpA, nx);
 		util::sigmoid(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
@@ -403,7 +467,7 @@ namespace testUtil {
 
 		const float* tmpA = matA;
 
-		tanhPrimeOnHost(tmpA, cpuM, nx);
+		tanhPrimeOnHost(cpuM, tmpA, nx);
 		util::tanhPrime(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
@@ -431,7 +495,7 @@ namespace testUtil {
 
 		const float* tmpA = matA;
 
-		sigmoidPrimeOnHost(tmpA, cpuM, nx);
+		sigmoidPrimeOnHost(cpuM, tmpA, nx);
 		util::sigmoidPrime(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
@@ -480,36 +544,4 @@ namespace testUtil {
 		CHECK(cudaDeviceReset());
 	}
 
-
-	void testmatTranspose() {
-
-		std::string testtype = "Transpose";
-		int ny = 1 << 3;
-		int nx = 1 << 4;
-
-		int nxy = nx * ny;
-		int nBytes = nxy * sizeof(float);
-
-		float* matA, *cpuM;
-		matA = (float*)malloc(nBytes);
-		cpuM = (float*)malloc(nBytes);
-
-
-		initialData(matA, nxy);
-
-		const float* tmpA = matA;
-
-		transposeHost(tmpA, cpuM, ny, nx);
-		util::matrixTranspose(matA, ny, nx);
-		checkResult(cpuM, matA, nxy, testtype);
-
-
-		// free host memory
-		free(matA);
-		tmpA = nullptr;
-
-		// reset device
-		CHECK(cudaDeviceReset());
-
-	}
 }

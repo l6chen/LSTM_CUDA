@@ -32,7 +32,7 @@ namespace testLayer {
 		std::cout << "\n\n";
 	}
 	void testGateLayer() {
-		gateLayer::GateLayer* ig = new gateLayer::GateLayer(5, 5, 10, 3);
+		gateLayer::GateLayer* ig = new gateLayer::GateLayer(5, 5, 10, 3, "Input");
 		ig->showVar();
 		ig->showW();
 		ig->showb();

@@ -11,6 +11,7 @@
 #include "test_Layer.h"
 #include <iomanip>
 #include <direct.h>
+#include <windows.h>
 
 std::string subreplace(std::string resource_str, std::string sub_str, std::string new_str)
 {
@@ -44,15 +45,19 @@ int main() {
 
 	//Test Elementwise operations
 	std::cout << DELIMITER << std::endl << "Test Elementwise operations" << std::endl;
-	testUtil::testmatrixCalElem('+');
-	testUtil::testmatrixCalElem('-');
-	testUtil::testmatrixCalElem('*');
-	//testUtil::testmatrixCalElem('/');//not supported
+	testUtil::testmatElem('+');
+	testUtil::testmatElem('-');
+	testUtil::testmatElem('*');
+	//testUtil::testmatElem('/');//not supported
 
 	//Test Matrix Mul
 	std::cout << DELIMITER << std::endl << "Test Matrix Mul" << std::endl;
-	testUtil::testmatrixMul();
+	testUtil::testmatMul();
 
+	//Test Matrix Scal Mul
+	std::cout << DELIMITER << std::endl << "Test Matrix Scal Mul" << std::endl;
+	testUtil::testmatMulScal();
+	
 	//Test transpose
 	std::cout << DELIMITER << std::endl << "Test Matrix Tanspose" << std::endl;
 	testUtil::testmatTranspose();	

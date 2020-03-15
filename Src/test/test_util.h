@@ -22,13 +22,14 @@
 
 namespace testUtil {
 
-	void testmatrixCalElem(char op);
-	void testmatrixMul();
+	void testmatElem(char op);
+	void testmatMul();
+	void testmatMulScal();
 	void testtanh();
 	void testsigmoid();
 	void testsoftmax();
 	void testmatTranspose();
-	void testmatrixMul();
+	void testmatMul();
 	void testtanhPrime();
 	void testsigmoidPrime();
 	void testcrossEntropyLoss();

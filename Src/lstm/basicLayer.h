@@ -48,7 +48,8 @@ namespace basicLayer {
 		float* concatVec(float* vecA, float* vecB, const int a, const int b);
 		void randInit();
 		void showVar() const;
-		void weightbiasTruncInit(float* W, float* b, const int Wlen, const int blen);
+		void weightbiasTruncInit(float* Wh, float* Wx, float* b, 
+			const int Whlen, const int Wxlen, const int blen);
 	};
 }
 
