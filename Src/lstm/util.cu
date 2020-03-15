@@ -91,7 +91,6 @@ namespace util {
 		
 	}
 
-
 	__global__ void tanhPrimeGPU(float* d_A, int nx) {
 		unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 		if (idx < nx)
@@ -120,6 +119,20 @@ namespace util {
 			}
 		}
 	}
+
+
+	__global__ void TransposeGPU(float *out, float *in, const int nrows, const int ncols)
+	{
+		int iy = blockIdx.y * blockDim.y + threadIdx.y;
+		int ix = blockIdx.x * blockDim.x + threadIdx.x;
+
+		if (iy < nrows && ix < ncols) {
+			out[ix*nrows + iy] = in[iy*ncols + ix];
+		}
+	}
+
+	
+
 
 	void matrixCalElem(float* matA, float* matB, int m, int n, char op) {
 		float* d_A, * d_B;
@@ -209,6 +222,22 @@ namespace util {
 		cudaFree(d_A);
 	}
 
+	void sigmoidPrime(float *A, int n) {
+		
+		float* d_A;
+		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, A, n * sizeof(float), cudaMemcpyHostToDevice));
+
+		dim3 block(BLOCK_SIZE);
+		dim3 grid((n + block.x - 1) / block.x);
+
+		sigmoidPrimeGPU << <grid, block >> > (d_A, n);
+		CHECK(cudaMemcpy(A, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
+		cudaFree(d_A);
+
+	}
+
+
 	void tanhPrime(float* matA, int n) {
 		float* d_A;
 		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
@@ -260,4 +289,33 @@ namespace util {
 		cudaFree(d_out);
 		return avgcost;
 	}
+
+	void matrixTranspose(float* matA, int height, int width) {
+
+		dim3 block(BLOCK_SIZE, BLOCK_SIZE);
+		dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
+		float *d_A, *d_out;
+
+		CHECK(cudaMalloc((void**)&d_A, height * width * sizeof(float)));
+		CHECK(cudaMalloc((void**)&d_out, height * width * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, matA, height * width * sizeof(float), cudaMemcpyHostToDevice));
+		TransposeGPU << <grid, block >> > (d_out, d_A, height, width);
+		CHECK(cudaMemcpy(matA, d_out, height * width * sizeof(float), cudaMemcpyDeviceToHost));
+
+		cudaFree(d_A);
+		cudaFree(d_out);
+	
+	}
+
+
+
+
+
+
+
+
+
+
+
+
 }
