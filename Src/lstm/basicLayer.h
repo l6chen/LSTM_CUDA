@@ -27,6 +27,10 @@
 }
 
 namespace basicLayer {
+	struct OutputsDelta {
+		std::vector<float*> fgs, igs, ogs, cts, cgs, hs;
+		std::vector<float*> dfs, dis, dos, dcts, dhs;
+	};
 	class BasicLayer {
 	protected:
 		const int embedSize;//
@@ -42,13 +46,15 @@ namespace basicLayer {
 					embedSize(embeds), timeStep(times),
 			        hiddenStates(hid), categories(cat) {}
 		virtual ~BasicLayer() {}
-		virtual float* forward(float* h, float* x) { return nullptr; }
+		virtual float* forward(float* x, float* h, void (*activate)(float* A, int n)) { return nullptr; }
 		virtual float* backward(float* dh, float* x) { return nullptr; }
 		virtual void init() {}
 		float* concatVec(float* vecA, float* vecB, const int a, const int b);
 		void randInit();
 		void showVar() const;
 		void weightbiasTruncInit(float* Wh, float* Wx, float* b, 
+			const int Whlen, const int Wxlen, const int blen);
+		void weightbiasGradInit(float* Wh, float* Wx, float* b,
 			const int Whlen, const int Wxlen, const int blen);
 	};
 }

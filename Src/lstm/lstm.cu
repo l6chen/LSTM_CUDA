@@ -11,4 +11,5 @@ namespace lstm {
 		_rnnSize = rnnSize;
 		_numLSTM = numLSTM;
 	}
+	void LSTMNetwork::train(){}
 }

@@ -25,8 +25,6 @@ namespace basicLayer {
 		unsigned int idh = iy * (hid + emb) + ix;
 
 		//for Wh
-		if (ix == hid + emb - 1 && iy == hid)
-			printf("%d, %d\n", iy, ix);
 		if (ix < hid && iy < hid) {
 			d_Wh[iy * hid + ix] = curand_uniform(&rndstates[idh]) * 2.0E-4 - 1.0E-4;
 		}//for Wx
@@ -35,6 +33,25 @@ namespace basicLayer {
 		}//for bin
 		else if (ix < hid && iy == hid) {
 			d_b[ix] = curand_uniform(&rndstates[idh]) * 2.0E-4 - 1.0E-4;
+		}
+
+	}
+
+	__global__ void weightbiasGradInitGPU(int hid, int emb, float* d_Wh, float* d_Wx,
+		float* d_b) { // truncated uniform
+		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
+		unsigned int iy = blockIdx.y;
+		unsigned int idh = iy * (hid + emb) + ix;
+
+		//for Wh
+		if (ix < hid && iy < hid) {
+			d_Wh[iy * hid + ix] = 0.0f;
+		}//for Wx
+		else if (ix < hid + emb && iy < hid) {
+			d_Wx[iy * emb + ix - hid] = 0.0f;
+		}//for bin
+		else if (ix < hid && iy == hid) {
+			d_b[ix] = 0.0f;
 		}
 
 	}
@@ -83,6 +100,37 @@ namespace basicLayer {
 		dim3 grid((n + block.x - 1) / block.x, m);
 		weightbiasTruncInitGPU << <grid, block >> > (hiddenStates, embedSize,
 			d_Wh, d_Wx, d_b, rndstates);
+
+		//transfer data from device to host
+		CHECK(cudaMemcpy(Wh, d_Wh, Whlen * sizeof(float), cudaMemcpyDeviceToHost));
+		CHECK(cudaMemcpy(Wx, d_Wx, Wxlen * sizeof(float), cudaMemcpyDeviceToHost));
+		CHECK(cudaMemcpy(b, d_b, blen * sizeof(float), cudaMemcpyDeviceToHost));
+
+		//free device memory
+		CHECK(cudaFree(d_Wh));
+		CHECK(cudaFree(d_Wx));
+		CHECK(cudaFree(d_b));
+
+	}
+
+	void BasicLayer::weightbiasGradInit(float* Wh, float* Wx, float* b,
+		const int Whlen, const int Wxlen, const int blen) {
+
+		float* d_Wh, * d_Wx, * d_b;
+		std::cout << Whlen << Wxlen << blen << std::endl;
+		//malloc device memory
+		CHECK(cudaMalloc((void**)& d_Wh, Whlen * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_Wx, Wxlen * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_b, blen * sizeof(float)));
+
+		//Init as 0;
+		int m = hiddenStates + 1;
+		int n = blen;
+
+		dim3 block(BLOCK_SIZE, 1);
+		dim3 grid((n + block.x - 1) / block.x, m);
+		weightbiasGradInitGPU << <grid, block >> > (hiddenStates, embedSize,
+			d_Wh, d_Wx, d_b);
 
 		//transfer data from device to host
 		CHECK(cudaMemcpy(Wh, d_Wh, Whlen * sizeof(float), cudaMemcpyDeviceToHost));

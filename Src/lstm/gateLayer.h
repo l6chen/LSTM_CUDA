@@ -14,26 +14,91 @@
 
 namespace gateLayer {
 	class GateLayer: public basicLayer::BasicLayer {
-	private:
+	protected:
         float* Wh, * Wx, * b;
+		float* WhGrad, * WxGrad, * bGrad;
 		int Whlen, Wxlen, blen;
-		void updateWb(float lr, float* Wh_grad, float* Wx_grad, float* b_grad);
-		float* calLoss(float* dh, float* c, float* out) const;
-		float* calWhGrad(float* dhpre, float* delta) const;
-		float* calWxGrad(float* x, float* out) const;
-		float* calbGrad(float* deltaf) const;
-		std::string gatename;
+		int curTime;
 
 	public:
-		GateLayer(int embeds, int times, int hid, int cat, std::string gt) :
-		basicLayer::BasicLayer(embeds, times, hid, cat), gatename(gt) { init(); }
+		GateLayer(int embeds, int times, int hid, int cat);
+		~GateLayer();
+
 		void init() override;
-		float* forward(float* h, float* x) override;
-		float* backward(float* dh, float* x) override;
+		inline void WbGradInit();
+
+		float* forward(float* x, float* h, void (*activate)(float* A, int n)) override;
+		void calGrad(float* x, basicLayer::OutputsDelta& datas, std::vector<float*> dgates);
+		void updateWb(float lr);
+
 		void showW() const;
 		void showb() const;
 		void showforward(float* in) const;
-		~GateLayer();
+
+		float* getWh() const { return Wh; }
+	};
+
+	/*******************************Four Gates with Parameter***********************************/
+	class OutputGate : public GateLayer {
+	public:
+		OutputGate(int embeds, int times, int hid, int cat) :
+			GateLayer(embeds, times, hid, cat) { init(); }
+
+		void calDelta(float* x, basicLayer::OutputsDelta& datas);
+		~OutputGate() {};
+	};
+
+	class InputGate : public GateLayer {
+	public:
+		InputGate(int embeds, int times, int hid, int cat) :
+			GateLayer(embeds, times, hid, cat) {
+			init();
+		}
+
+		void calDelta(float* x, basicLayer::OutputsDelta& datas);
+		~InputGate() {};
+	};
+
+	class ForgetGate : public GateLayer {
+	public:
+		ForgetGate(int embeds, int times, int hid, int cat) :
+			GateLayer(embeds, times, hid, cat) {
+			init();
+		}
+
+		void calDelta(float* x, basicLayer::OutputsDelta& datas);
+		~ForgetGate() {};
+	};
+
+	class CellTGate : public GateLayer {
+	public:
+		CellTGate(int embeds, int times, int hid, int cat) :
+			GateLayer(embeds, times, hid, cat) {
+			init();
+		}
+
+		void calDelta(float* x, basicLayer::OutputsDelta& datas);
+		~CellTGate() {};
+	};
+
+	/***********************************Special Layers***************************************/
+
+	class CellGate : public basicLayer::BasicLayer {
+	private:
+		int curTime;
+	public:
+		CellGate(int embeds, int times, int hid, int cat) :
+			basicLayer::BasicLayer(embeds, times, hid, cat) {}
+		float* forward(basicLayer::OutputsDelta datas);
+	};
+
+	class HiddenGate : public basicLayer::BasicLayer {
+	private:
+		int curTime;
+	public:
+		HiddenGate(int embeds, int times, int hid, int cat) :
+			basicLayer::BasicLayer(embeds, times, hid, cat) {}
+		float* forward(basicLayer::OutputsDelta datas);
 	};
 }
 

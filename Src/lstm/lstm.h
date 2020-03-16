@@ -8,6 +8,8 @@
 
 #include <vector>
 #include <iostream>
+#include "basicLayer.h"
+#include "gateLayer.h"
 
 namespace lstm {
 	class LSTMNetwork {
@@ -15,9 +17,11 @@ namespace lstm {
 		float _lr;
 		int _rnnSize;
 		int _numLSTM;
-
+		int curStep = 0;
+		basicLayer::OutputsDelta datas;
 	public:
 		LSTMNetwork(float lr, int rnnSize = 512, int numLSTM = 1);
+		void train();
 	};
 }
 #endif /* LSTM_H_ */
