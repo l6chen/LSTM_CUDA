@@ -38,7 +38,7 @@ namespace basicLayer {
 	}
 
 	__global__ void weightbiasGradInitGPU(int hid, int emb, float* d_Wh, float* d_Wx,
-		float* d_b) { // truncated uniform
+		float* d_b) { 
 		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
 		unsigned int iy = blockIdx.y;
 		unsigned int idh = iy * (hid + emb) + ix;
@@ -81,7 +81,7 @@ namespace basicLayer {
 		randInit();
 
 		float* d_Wh, * d_Wx, * d_b;
-		std::cout << Whlen << Wxlen << blen<<std::endl;
+
 		//malloc device memory
 		CHECK(cudaMalloc((void**)& d_Wh, Whlen * sizeof(float)));
 		CHECK(cudaMalloc((void**)& d_Wx, Wxlen * sizeof(float)));

@@ -9,19 +9,8 @@
 #include "../lstm/dataLoader.h"
 #include "test_util.h"
 #include "test_Layer.h"
-#include <iomanip>
-#include <direct.h>
-#include <windows.h>
 
-std::string subreplace(std::string resource_str, std::string sub_str, std::string new_str)
-{
-	std::string::size_type pos = 0;
-	while ((pos = resource_str.find(sub_str)) != std::string::npos) 
-	{
-		resource_str.replace(pos, sub_str.length(), new_str);
-	}
-	return resource_str;
-}
+
 
 
 int main() {
@@ -30,18 +19,21 @@ int main() {
 
 	//Test Dataloader
 	std::cout << DELIMITER << std::endl << "Test Data Loader" << std::endl;
-	char buf1[256];
-	_getcwd(buf1, sizeof(buf1));
-	std::string testDir = buf1;
-	testDir = subreplace(testDir, "\\", "/");
-	std::string datasetDir = testDir + "/../../../datasets";
-	dataLoader::DataLoader loader(datasetDir);
+
+	dataLoader::DataLoader loader;
 	loader.load();
 	std::vector<std::string> sentiments = loader.getsentiments();
 	std::vector<std::string> tweets = loader.gettexts();
 	for (int i = 0; i < 5; i++)
 		std::cout << sentiments[i] << " " << tweets[i] << std::endl;
 	std::cout << *(sentiments.end() - 1) << " " << *(tweets.end() - 1) << std::endl;
+	const std::vector<std::vector<int>> oneHot = loader.oneHotCoding(sentiments);
+	for (int i = 0; i < 5; i++) {
+		for (int j = 0; j < 3; j++) {
+			std::cout << oneHot[i][j] << " ";
+		}
+		std::cout << std::endl;
+	}
 
 	//Test Elementwise operations
 	std::cout << DELIMITER << std::endl << "Test Elementwise operations" << std::endl;
@@ -82,8 +74,6 @@ int main() {
 	std::cout << DELIMITER << std::endl << "Test Sigmoid Prime" << std::endl;
 	testUtil::testsigmoidPrime();
 
-
-
 	//Test Cross Entropy Loss
 	std::cout << DELIMITER << std::endl << "Test Cross Entropy Loss" << std::endl;
 	testUtil::testcrossEntropyLoss();
@@ -92,8 +82,8 @@ int main() {
 	std::cout << DELIMITER << std::endl << "Test Basic Layer" << std::endl;
 	testLayer::testBasicLayer();
 
-	//Test Input Gate
-	std::cout << DELIMITER << std::endl << "Test Input Gate" << std::endl;
+	//Test Gate Layer
+	std::cout << DELIMITER << std::endl << "Test Gate Layer" << std::endl;
 	testLayer::testGateLayer();
 
 	std::cout << "Test ends.";

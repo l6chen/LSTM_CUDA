@@ -42,7 +42,7 @@ namespace gateLayer {
 	class OutputGate : public GateLayer {
 	public:
 		OutputGate(int embeds, int times, int hid, int cat) :
-			GateLayer(embeds, times, hid, cat) { init(); }
+			GateLayer(embeds, times, hid, cat) { }
 
 		void calDelta(float* x, basicLayer::OutputsDelta& datas);
 		~OutputGate() {};
@@ -51,9 +51,7 @@ namespace gateLayer {
 	class InputGate : public GateLayer {
 	public:
 		InputGate(int embeds, int times, int hid, int cat) :
-			GateLayer(embeds, times, hid, cat) {
-			init();
-		}
+			GateLayer(embeds, times, hid, cat) {}
 
 		void calDelta(float* x, basicLayer::OutputsDelta& datas);
 		~InputGate() {};
@@ -62,9 +60,7 @@ namespace gateLayer {
 	class ForgetGate : public GateLayer {
 	public:
 		ForgetGate(int embeds, int times, int hid, int cat) :
-			GateLayer(embeds, times, hid, cat) {
-			init();
-		}
+			GateLayer(embeds, times, hid, cat) {}
 
 		void calDelta(float* x, basicLayer::OutputsDelta& datas);
 		~ForgetGate() {};
@@ -73,9 +69,7 @@ namespace gateLayer {
 	class CellTGate : public GateLayer {
 	public:
 		CellTGate(int embeds, int times, int hid, int cat) :
-			GateLayer(embeds, times, hid, cat) {
-			init();
-		}
+			GateLayer(embeds, times, hid, cat) {}
 
 		void calDelta(float* x, basicLayer::OutputsDelta& datas);
 		~CellTGate() {};

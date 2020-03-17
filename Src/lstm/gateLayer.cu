@@ -22,15 +22,14 @@ namespace gateLayer {
 		Wh = new float[Whlen];
 		Wx = new float[Wxlen];
 		b = new float[blen];
+
+		init();
 	}
 
 	GateLayer::~GateLayer() {
 		delete[] Wh;
 		delete[] Wx;
 		delete[] b;
-		delete[] WhGrad;
-		delete[] WxGrad;
-		delete[] bGrad;
 		std::cout << "debuginfo: gateLayer is out" << std::endl;
 	}
 
@@ -112,8 +111,8 @@ namespace gateLayer {
 			util::tanh(cgs[k], hiddenStates);
 			util::sigmoidPrime(ogs[k], hiddenStates);
 			datas.dos[k] = util::matElem(util::matElem(dhs[k],
-				cgs[k], hiddenStates, 1, '+'),
-				ogs[k], hiddenStates, 1, '+');
+				cgs[k], hiddenStates, 1, '*'),
+				ogs[k], hiddenStates, 1, '*');
 		}
 
 	}
@@ -133,10 +132,10 @@ namespace gateLayer {
 			util::tanhPrime(cgs[k], hiddenStates);
 			util::sigmoidPrime(igs[k], hiddenStates);
 			datas.ogs[k] = util::matElem(util::matElem(util::matElem(util::matElem(dhs[k],
-				ogs[k], hiddenStates, 1, '+'),
-				cgs[k], hiddenStates, 1, '+'),
-				cts[k], hiddenStates, 1, '+'),
-				igs[k], hiddenStates, 1, '+');
+				ogs[k], hiddenStates, 1, '*'),
+				cgs[k], hiddenStates, 1, '*'),
+				cts[k], hiddenStates, 1, '*'),
+				igs[k], hiddenStates, 1, '*');
 		}
 
 	}
@@ -156,10 +155,10 @@ namespace gateLayer {
 			util::tanhPrime(cgs[k], hiddenStates);
 			util::sigmoidPrime(fgs[k], hiddenStates);
 			datas.ogs[k] = util::matElem(util::matElem(util::matElem(util::matElem(dhs[k],
-				ogs[k], hiddenStates, 1, '+'),
-				cgs[k], hiddenStates, 1, '+'),
-				cgs[k - 1], hiddenStates, 1, '+'),
-				fgs[k], hiddenStates, 1, '+');
+				ogs[k], hiddenStates, 1, '*'),
+				cgs[k], hiddenStates, 1, '*'),
+				cgs[k - 1], hiddenStates, 1, '*'),
+				fgs[k], hiddenStates, 1, '*');
 		}
 
 	}
@@ -179,10 +178,10 @@ namespace gateLayer {
 			util::tanhPrime(cgs[k], hiddenStates);
 			util::tanhPrime(cts[k], hiddenStates);
 			datas.ogs[k] = util::matElem(util::matElem(util::matElem(util::matElem(dhs[k],
-				ogs[k], hiddenStates, 1, '+'),
-				cgs[k], hiddenStates, 1, '+'),
-				igs[k], hiddenStates, 1, '+'),
-				cts[k], hiddenStates, 1, '+');
+				ogs[k], hiddenStates, 1, '*'),
+				cgs[k], hiddenStates, 1, '*'),
+				igs[k], hiddenStates, 1, '*'),
+				cts[k], hiddenStates, 1, '*');
 		}
 
 	}
