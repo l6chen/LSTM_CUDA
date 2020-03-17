@@ -20,20 +20,8 @@ int main() {
 	//Test Dataloader
 	std::cout << DELIMITER << std::endl << "Test Data Loader" << std::endl;
 
-	dataLoader::DataLoader loader;
-	loader.load();
-	std::vector<std::string> sentiments = loader.getsentiments();
-	std::vector<std::string> tweets = loader.gettexts();
-	for (int i = 0; i < 5; i++)
-		std::cout << sentiments[i] << " " << tweets[i] << std::endl;
-	std::cout << *(sentiments.end() - 1) << " " << *(tweets.end() - 1) << std::endl;
-	const std::vector<std::vector<int>> oneHot = loader.oneHotCoding(sentiments);
-	for (int i = 0; i < 5; i++) {
-		for (int j = 0; j < 3; j++) {
-			std::cout << oneHot[i][j] << " ";
-		}
-		std::cout << std::endl;
-	}
+	dataLoader::DataLoader loader(0.8);
+	dataLoader::DataSets ds = loader.load();
 
 	//Test Elementwise operations
 	std::cout << DELIMITER << std::endl << "Test Elementwise operations" << std::endl;

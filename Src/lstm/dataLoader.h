@@ -10,20 +10,29 @@
 #include <vector>
 #include <iomanip>
 #include <direct.h>
+#include <unordered_map>
 
 namespace dataLoader {
+	struct DataSets {
+		std::vector<std::vector<int>> trainX, testX, valX;
+		std::vector<int> trainY, testY, valY;
+	};
 	class DataLoader {
 	private:
 		std::string _datasetDir;
 		std::vector<std::string> _sentiments;
 		std::vector<std::string> _texts;
+		float _trainPer;
+		const std::vector<std::vector<int>> oneHotCoding(std::vector<std::string> labels);//deprecated
+		void writeWashed(std::vector<std::string> washed);
+		DataSets datasplitter(const std::vector<std::vector<int>> textCode,
+			const std::vector<int> labelCode);
 	public:
-		DataLoader();
-		DataLoader(std::string datasetDir) : _datasetDir(datasetDir) {}
-		void load();
+		DataLoader(float trainPer = 0.8);
+		~DataLoader(){}
 		std::vector<std::string> getsentiments() { return _sentiments; }
 		std::vector<std::string> gettexts() { return _texts; }
-		const std::vector<std::vector<int>> oneHotCoding(std::vector<std::string> labels);
+		DataSets load();
 	};
 }
 

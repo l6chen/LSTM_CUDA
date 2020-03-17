@@ -18,6 +18,7 @@ namespace lstm {
 		int _rnnSize;
 		int _numLSTM;
 		int curStep = 0;
+		int embedSize = 10;
 		basicLayer::OutputsDelta datas;
 	public:
 		LSTMNetwork(float lr, int rnnSize = 512, int numLSTM = 1);
