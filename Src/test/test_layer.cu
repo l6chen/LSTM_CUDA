@@ -40,4 +40,14 @@ namespace testLayer {
 		delete ig;
 		std::cout << "\n\n";
 	}
+
+	void testDenseLayer() {
+		denseLayer::DenseLayer* dl = new denseLayer::DenseLayer(5, 5, 10, 3);
+		dl->showVar();
+		dl->showW();
+		dl->showb();
+
+		delete dl;
+		std::cout << "\n\n";
+	}
 }

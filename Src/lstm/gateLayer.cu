@@ -70,9 +70,9 @@ namespace gateLayer {
 	void GateLayer::updateWb(float lr) {
 		int h = hiddenStates;
 		int e = embedSize;
-		Wh = util::matElem(Wh, util::matMulScal(WhGrad, lr, h, h), h, h, '+');
-		Wx = util::matElem(Wh, util::matMulScal(WxGrad, lr, h, e), h, e, '+');
-		b = util::matElem(b, util::matMulScal(bGrad, lr, h, h), h, h, '+');
+		Wh = util::matElem(Wh, util::matMulScal(WhGrad, lr, h, h), h, h, '-');
+		Wx = util::matElem(Wh, util::matMulScal(WxGrad, lr, h, e), h, e, '-');
+		b = util::matElem(b, util::matMulScal(bGrad, lr, h, h), h, h, '-');
 	}
 
 	//Showing information

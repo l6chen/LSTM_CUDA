@@ -74,6 +74,11 @@ int main() {
 	std::cout << DELIMITER << std::endl << "Test Gate Layer" << std::endl;
 	testLayer::testGateLayer();
 
+	//Test Dense Layer
+	std::cout << DELIMITER << std::endl << "Test Dense Layer" << std::endl;
+	testLayer::testDenseLayer();
+	
+
 	std::cout << "Test ends.";
 	system("PAUSE");
 	return 0;

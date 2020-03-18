@@ -3,8 +3,8 @@
 *   PID: A53270085, A53270024
 *	This file defines the data structure for grid
 */
-#ifndef BASICLayer_H_
-#define BASICLayer_H_
+#ifndef BASICLAYER_H_
+#define BASICLAYER_H_
 
 #include <vector>
 #include <iostream>
@@ -56,7 +56,12 @@ namespace basicLayer {
 			const int Whlen, const int Wxlen, const int blen);
 		void weightbiasGradInit(float* Wh, float* Wx, float* b,
 			const int Whlen, const int Wxlen, const int blen);
+		void denseweightbiasTruncInit(float* W, float* b,
+			const int Wlen, const int blen);
+		void denseweightbiasGradInit(float* W, float* b,
+			const int Wlen, const int blen);
+
 	};
 }
 
-#endif /* BASICLayer_H_ */
+#endif /* BASICLAYER_H_ */

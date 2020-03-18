@@ -34,7 +34,7 @@ namespace basicLayer {
 		else if (ix < hid && iy == hid) {
 			d_b[ix] = curand_uniform(&rndstates[idh]) * 2.0E-4 - 1.0E-4;
 		}
-
+		        
 	}
 
 	__global__ void weightbiasGradInitGPU(int hid, int emb, float* d_Wh, float* d_Wx,
@@ -66,6 +66,37 @@ namespace basicLayer {
 		}
 	
 	}
+
+	__global__ void denseweightbiasTruncInitGPU(int nx, int ny, float* d_W,
+		float* d_b, curandState* rndstates) {// truncated uniform
+		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
+		unsigned int iy = blockIdx.y;
+		unsigned int idx = iy * nx + ix;
+
+		//for W
+		if (ix < nx - 1 && iy < ny) {
+			d_W[iy * (nx - 1) + ix] = curand_uniform(&rndstates[idx]) * 2.0E-4 - 1.0E-4;
+		}//for b
+		else if (ix == nx - 1 && iy < ny) {
+			d_b[iy] = curand_uniform(&rndstates[idx]) * 2.0E-4 - 1.0E-4;
+		}
+	}
+
+	__global__ void denseweightbiasGradInitGPU(int nx, int ny, float* d_W,
+		float* d_b, curandState* rndstates) {
+		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
+		unsigned int iy = blockIdx.y;
+		unsigned int idx = iy * nx + ix;
+
+		//for W
+		if (ix < nx - 1 && iy < ny) {
+			d_W[iy * (nx - 1) + ix] = 0.0f;
+		}//for b
+		else if (ix == nx - 1 && iy < ny) {
+			d_b[iy] = 0.0f;
+		}
+	}
+
 
 	void BasicLayer::randInit() {
 		int m = hiddenStates + 1;
@@ -188,4 +219,74 @@ namespace basicLayer {
 		}
 		std::cout << std::endl;
 	}
+
+	void BasicLayer::denseweightbiasTruncInit(float* W, float* b,
+		const int Wlen, const int blen) {
+		randInit();
+
+		float* d_W, * d_b;
+
+		//malloc device memory
+		CHECK(cudaMalloc((void**)& d_W, Wlen * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_b, blen * sizeof(float)));
+
+		//transfer data from host to device
+		CHECK(cudaMemcpy(d_W, W, Wlen * sizeof(float), cudaMemcpyHostToDevice));
+		CHECK(cudaMemcpy(d_b, b, blen * sizeof(float), cudaMemcpyHostToDevice));
+
+		//randomlize weights and bias
+		int m = categories;
+		int n = hiddenStates + 1;
+
+		dim3 block(BLOCK_SIZE, 1);
+		dim3 grid((n + block.x - 1) / block.x, m);
+		denseweightbiasTruncInitGPU << <grid, block >> > (n, m,
+			 d_W, d_b, rndstates);
+
+		//transfer data from device to host
+		CHECK(cudaMemcpy(W, d_W, Wlen * sizeof(float), cudaMemcpyDeviceToHost));
+		CHECK(cudaMemcpy(b, d_b, blen * sizeof(float), cudaMemcpyDeviceToHost));
+
+		//free device memory
+		CHECK(cudaFree(d_W));
+		CHECK(cudaFree(d_b));
+
+	}
+
+	void BasicLayer::denseweightbiasGradInit(float* W, float* b,
+		const int Wlen, const int blen) {
+		randInit();
+
+		float* d_W, * d_b;
+
+		//malloc device memory
+		CHECK(cudaMalloc((void**)& d_W, Wlen * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_b, blen * sizeof(float)));
+
+		//transfer data from host to device
+		CHECK(cudaMemcpy(d_W, W, Wlen * sizeof(float), cudaMemcpyHostToDevice));
+		CHECK(cudaMemcpy(d_b, b, blen * sizeof(float), cudaMemcpyHostToDevice));
+
+		//randomlize weights and bias
+		int m = categories;
+		int n = hiddenStates + 1;
+
+		dim3 block(BLOCK_SIZE, 1);
+		dim3 grid((n + block.x - 1) / block.x, m);
+		denseweightbiasGradInitGPU << <grid, block >> > (n, m,
+			d_W, d_b, rndstates);
+
+		//transfer data from device to host
+		CHECK(cudaMemcpy(W, d_W, Wlen * sizeof(float), cudaMemcpyDeviceToHost));
+		CHECK(cudaMemcpy(b, d_b, blen * sizeof(float), cudaMemcpyDeviceToHost));
+
+		//free device memory
+		CHECK(cudaFree(d_W));
+		CHECK(cudaFree(d_b));
+	}
+
+
+
+
+
 }

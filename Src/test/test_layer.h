@@ -10,10 +10,12 @@
 #include <iostream>
 #include "../lstm/basicLayer.h"
 #include "../lstm/gateLayer.h"
+#include "../lstm/denseLayer.h"
 
 namespace testLayer {
 	void testBasicLayer();
 	void testGateLayer();
+	void testDenseLayer();
 }
 
 
