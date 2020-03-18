@@ -52,7 +52,7 @@ namespace denseLayer {
 	{
 		WbGradInit();//for each h, necessary to reinitialize grad to zero.
 		
-		//WxGrad
+		//y is pred, t is true, h is input of dense, output of LSTM
 		float* delta = util::matElem(y, t, categories, 1, '-');
 		WGrad = util::matMul(delta, h, categories, 1, hiddenStates);
 		bGrad = delta;

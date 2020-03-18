@@ -11,11 +11,13 @@
 #include "../lstm/basicLayer.h"
 #include "../lstm/gateLayer.h"
 #include "../lstm/denseLayer.h"
+#include "../lstm/embedLayer.h"
 
 namespace testLayer {
 	void testBasicLayer();
 	void testGateLayer();
 	void testDenseLayer();
+	void testEmbedLayer();
 }
 
 

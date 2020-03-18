@@ -50,4 +50,14 @@ namespace testLayer {
 		delete dl;
 		std::cout << "\n\n";
 	}
+
+	void testEmbedLayer() {
+		embedLayer::EmbedLayer* el = new embedLayer::EmbedLayer(10, 5, 10, 3, 18);
+
+		el->showW();
+
+
+		delete el;
+		std::cout << "\n\n";
+	}
 }

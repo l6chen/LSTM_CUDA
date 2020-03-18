@@ -22,6 +22,7 @@ file(GLOB HEADERS
       ../lstm/basicLayer.cu
       ../lstm/dataLoader.cu
       ../lstm/denseLayer.cu
+      ../lstm/embedLayer.cu
       ../lstm/util.cu
 
  

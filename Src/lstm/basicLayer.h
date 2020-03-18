@@ -60,6 +60,8 @@ namespace basicLayer {
 			const int Wlen, const int blen);
 		void denseweightbiasGradInit(float* W, float* b,
 			const int Wlen, const int blen);
+		void embedweightTruncInit(float* W, const int Wlen);
+		void embedweightGradInit(float* W, const int Wlen);
 
 	};
 }

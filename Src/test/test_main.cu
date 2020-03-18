@@ -78,6 +78,9 @@ int main() {
 	std::cout << DELIMITER << std::endl << "Test Dense Layer" << std::endl;
 	testLayer::testDenseLayer();
 	
+	//Test Embed Layer
+	std::cout << DELIMITER << std::endl << "Test Embed Layer" << std::endl;
+	testLayer::testEmbedLayer();
 
 	std::cout << "Test ends.";
 	system("PAUSE");

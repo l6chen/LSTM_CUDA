@@ -18,6 +18,7 @@ file(GLOB HEADERS *.h *.cuh)
       basicLayer.cu
       gateLayer.cu
       denseLayer.cu
+      embedLayer.cu
       util.cu
 
       OPTIONS --cudart=shared  -arch sm_52 -use_fast_math
