@@ -313,8 +313,9 @@ namespace util {
 
 
 	/*********************************Activation Functions*******************************/
-	void softmax(float* A, int n, const int categories){
+	void softmax(float* A, int n){
 		float *d_A;
+		int categories = 3;
 		CHECK(cudaMalloc((void**)&d_A, n * sizeof(float)));
 		CHECK(cudaMemcpy(d_A, A, n * sizeof(float), cudaMemcpyHostToDevice));
 		dim3 block(BLOCK_SIZE);

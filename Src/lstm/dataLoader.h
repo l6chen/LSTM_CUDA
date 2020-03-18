@@ -13,9 +13,12 @@
 #include <unordered_map>
 
 namespace dataLoader {
-	struct DataSets {
+	class DataSets {
+	public:
 		std::vector<std::vector<int>> trainX, testX, valX;
 		std::vector<int> trainY, testY, valY;
+		int dictLen;
+		int sentenLen;
 	};
 	class DataLoader {
 	private:

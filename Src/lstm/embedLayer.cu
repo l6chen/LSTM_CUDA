@@ -14,8 +14,8 @@ namespace embedLayer {
 
 	/****************************EmbedLayer Implementation***************************/
 
-	EmbedLayer::EmbedLayer(int embeds, int times, int hid, int cat, int dic) :
-		basicLayer::BasicLayer(embeds, times, hid, cat),  dictSize(dic){
+	EmbedLayer::EmbedLayer(int embeds, int times, int hid, int cat, float lr, int dic) :
+		basicLayer::BasicLayer(embeds, times, hid, cat, lr),  dictSize(dic){
 		Wlen = embeds * dic;
 
 		W = new float[Wlen];
@@ -51,9 +51,9 @@ namespace embedLayer {
 			WGrad[iy * dictSize + textCode] = delta[iy];
 		}
 
-	}
+	}// need to be done senLen times
 
-	void EmbedLayer::updateWb(float lr) {
+	void EmbedLayer::updateWb() {
 		int d = dictSize;
 		int e = embedSize;
 		W = util::matElem(W, util::matMulScal(WGrad, lr, e, d), e, d, '-');

@@ -12,7 +12,7 @@
 
 namespace testLayer {
 	void testBasicLayer() {
-		basicLayer::BasicLayer* bd = new basicLayer::BasicLayer(0, 2, 4, 5);
+		basicLayer::BasicLayer* bd = new basicLayer::BasicLayer(0, 2, 4, 5, 0.001);
 		bd->showVar();
 		float* a = new float[3];
 		float* b = new float[4];
@@ -32,7 +32,7 @@ namespace testLayer {
 		std::cout << "\n\n";
 	}
 	void testGateLayer() {
-		gateLayer::GateLayer* ig = new gateLayer::GateLayer(5, 5, 10, 3);
+		gateLayer::GateLayer* ig = new gateLayer::GateLayer(5, 5, 10, 3, 0.001);
 		ig->showVar();
 		ig->showW();
 		ig->showb();
@@ -42,7 +42,7 @@ namespace testLayer {
 	}
 
 	void testDenseLayer() {
-		denseLayer::DenseLayer* dl = new denseLayer::DenseLayer(5, 5, 10, 3);
+		denseLayer::DenseLayer* dl = new denseLayer::DenseLayer(5, 5, 10, 3, 0.001);
 		dl->showVar();
 		dl->showW();
 		dl->showb();
@@ -52,7 +52,7 @@ namespace testLayer {
 	}
 
 	void testEmbedLayer() {
-		embedLayer::EmbedLayer* el = new embedLayer::EmbedLayer(10, 5, 10, 3, 18);
+		embedLayer::EmbedLayer* el = new embedLayer::EmbedLayer(10, 5, 10, 3, 0.001, 18);
 
 		el->showW();
 

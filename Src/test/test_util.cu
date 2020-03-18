@@ -412,7 +412,7 @@ namespace testUtil {
 		const float* tmpA = matA;
 
 		softmaxOnHost(cpuM, tmpA, nx);
-		util::softmax(matA, nx, categories);
+		util::softmax(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
 		// free host memory

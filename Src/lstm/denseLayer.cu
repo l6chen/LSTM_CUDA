@@ -14,8 +14,8 @@ namespace denseLayer {
 
 	/****************************DenseLayer Implementation***************************/
 
-	DenseLayer::DenseLayer(int embeds, int times, int hid, int cat) :
-		basicLayer::BasicLayer(embeds, times, hid, cat) {
+	DenseLayer::DenseLayer(int embeds, int times, int hid, int cat, float lr) :
+		basicLayer::BasicLayer(embeds, times, hid, cat, lr) {
 		Wlen = categories * hiddenStates;
 		blen = categories;
 
@@ -44,18 +44,17 @@ namespace denseLayer {
 		float* wh = util::matMul(W, h, categories, hiddenStates, 1);
 		float* out = util::matElem(wh, b, categories, 1, '+');
 		(*activate)(out, categories);
-		curTime++;
 		return out;
 	}
 
-	void DenseLayer::calGrad(float* y, float* t, float* h)
+	void DenseLayer::calGrad(float* delta, float* h)
 	{
 		WbGradInit();//for each h, necessary to reinitialize grad to zero.
 		
 		//y is pred, t is true, h is input of dense, output of LSTM
-		float* delta = util::matElem(y, t, categories, 1, '-');
 		WGrad = util::matMul(delta, h, categories, 1, hiddenStates);
 		bGrad = delta;
+
 	}
 
 	void DenseLayer::updateWb(float lr) {
@@ -84,9 +83,17 @@ namespace denseLayer {
 		std::cout << std::endl;
 	}
 
-	float DenseLayer::loss(float* p, float* t) {
+	float DenseLayer::calLoss(float* p, float* t) {
 		
 		return util::crossEntropyLoss(p, t, categories, 1);
 	}
 
+	float* DenseLayer::backward(float* h, float* y, float* t) {
+		float* delta = util::matElem(y, t, categories, 1, '-');
+		float* deltah = util::matMul(util::matTrans(W,
+			categories, hiddenStates), delta, hiddenStates, categories, 1);//may need 1-y^2
+		calGrad(delta, h);
+		updateWb(lr);
+		return deltah;
+	}
 }

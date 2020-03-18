@@ -27,9 +27,10 @@
 }
 
 namespace basicLayer {
-	struct OutputsDelta {
+	class OutputsDelta {
+	public:
 		std::vector<float*> fgs, igs, ogs, cts, cgs, hs;
-		std::vector<float*> dfs, dis, dos, dcts, dhs;
+		std::vector<float*> dfs, dis, dos, dcs, dhs;
 	};
 	class BasicLayer {
 	protected:
@@ -40,14 +41,31 @@ namespace basicLayer {
 		curandState* rndstates = NULL;//device variable
 		void showConcat(float* vec, const int len) const;
 		int allVar[4] = { embedSize, timeStep, hiddenStates, categories };
+		float lr;
 
 	public:
-		BasicLayer(int embeds, int times, int hid, int cat) :
+		BasicLayer(int embeds, int times, int hid, int cat, int lrate) :
 					embedSize(embeds), timeStep(times),
-			        hiddenStates(hid), categories(cat) {}
+			        hiddenStates(hid), categories(cat), lr(lrate) {}
 		virtual ~BasicLayer() {}
+
 		virtual float* forward(float* x, float* h, void (*activate)(float* A, int n)) { return nullptr; }
+		virtual float* forward(int textCode) { return nullptr; }
+		virtual float* forward(basicLayer::OutputsDelta* datas) { return nullptr; }
+
 		virtual float* backward(float* dh, float* x) { return nullptr; }
+		virtual float* backward(float* h, float* y, float* t) { return nullptr; }
+		virtual float calLoss(float* p, float* t) { return 0.0f; }
+
+		virtual void calGrad(float* x, basicLayer::OutputsDelta* datas, 
+			std::vector<float*>* dgates){}
+		virtual void calGrad(float* delta, int textCode){}
+		virtual void updateWb(){}
+		virtual void calDeltak(basicLayer::OutputsDelta* datas, int k) {}
+
+		virtual float* getWh() const { return nullptr; }
+		virtual float* getWx() const { return nullptr; }
+
 		virtual void init() {}
 		float* concatVec(float* vecA, float* vecB, const int a, const int b);
 		void randInit();

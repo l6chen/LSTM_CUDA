@@ -8,7 +8,6 @@
 #include <fstream>
 #include <vector>
 #include "dataLoader.h"
-
 #include <algorithm>
 #include <sstream>
 #define numOfSamples 13871
@@ -93,7 +92,7 @@ namespace dataLoader {
 		for (auto sentence : tokens) {
 			for (auto word: sentence){
 				if (dict.find(word) == dict.end()) {
-					dict.insert({ word, dictSize });
+					dict.insert({ word, dictSize + 1 });// idx 0 is for white space 
 					dictSize++;
 				}
 			}
@@ -165,6 +164,8 @@ namespace dataLoader {
 		const std::vector<int> labelCode) {
 
 		DataSets splitted;
+		splitted.sentenLen = 0;
+		int& sLen = splitted.sentenLen;
 		if (textCode.size() != labelCode.size()) {
 			std::cout << textCode.size() << " " << labelCode.size();
 			throw "text and label mismatch!";
@@ -183,16 +184,19 @@ namespace dataLoader {
 			for (int i = 0; i < trainSize; i++) {
 				splitted.trainX.push_back(textCode[draw[i]]);
 				splitted.trainY.push_back(labelCode[draw[i]]);
+				sLen = max(sLen, (int)textCode[draw[i]].size());
 			}
 			for (int i = 0; i < testSize; i++) {
 				int drawid = i + trainSize;
 				splitted.testX.push_back(textCode[draw[drawid]]);
 				splitted.testY.push_back(labelCode[draw[drawid]]);
+				sLen = max(sLen, (int)textCode[draw[drawid]].size());
 			}
 			for (int i = 0; i < valSize; i++) {
 				int drawid = i + trainSize + testSize;
 				splitted.valX.push_back(textCode[draw[drawid]]);
 				splitted.valY.push_back(labelCode[draw[drawid]]);
+				sLen = max(sLen, (int)textCode[draw[drawid]].size());
 			}
 		}
 		return splitted;
@@ -209,8 +213,10 @@ namespace dataLoader {
 		const std::vector<std::vector<int>> textCode = textEncode(tokens, dict);
 		const std::vector<int> labelCode = labelEncode(_sentiments);
 		DataSets ds = datasplitter(textCode, labelCode);
+		ds.dictLen = dict.size();
 		std::cout << ds.trainX[0][0] << " " << ds.trainY[0] << std::endl;//for debug
 		std::cout << dict.size() <<std::endl;//for debug
+		std::cout << ds.sentenLen << std::endl;
 		return ds;
 	}
 

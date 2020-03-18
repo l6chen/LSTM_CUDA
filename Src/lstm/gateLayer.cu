@@ -13,8 +13,8 @@ namespace gateLayer {
 
 	/****************************GateLayer Implementation***************************/
 
-	GateLayer::GateLayer(int embeds, int times, int hid, int cat) :
-		basicLayer::BasicLayer(embeds, times, hid, cat) {
+	GateLayer::GateLayer(int embeds, int times, int hid, int cat, float lr) :
+		basicLayer::BasicLayer(embeds, times, hid, cat, lr) {
 		Whlen = hiddenStates * hiddenStates;
 		Wxlen = hiddenStates * embedSize;
 		blen = hiddenStates;
@@ -50,24 +50,24 @@ namespace gateLayer {
 		return out;
 	}
 
-	void GateLayer::calGrad(float* x, basicLayer::OutputsDelta& datas, std::vector<float*> dgates)
+	void GateLayer::calGrad(float* x, basicLayer::OutputsDelta* datas, std::vector<float*>* dgates)
 	{
 		WbGradInit();//for each x, necessary to reinitialize grad to zero.
-		auto hs = datas.hs;
-		auto dfs = datas.dfs;
+		auto hs = datas->hs;
+		auto dfs = datas->dfs;
 		for (int k = curTime; k > 0; k--) {
-			//WhGrad
-			util::matElem_inplace(WhGrad, util::matMul(dgates[k], hs[k - 1],
+			//WhGrad,dgates[0] is for unpoint/unref
+			util::matElem_inplace(WhGrad, util::matMul(dgates[0][k], hs[k - 1],
 				hiddenStates, 1, hiddenStates), hiddenStates, hiddenStates, '+');
 			//bGrad
 			util::matElem_inplace(bGrad, dfs[k], hiddenStates, 1, '+');
 		}
-		//WxGrad
-		WxGrad = util::matMul(dgates.back(), x, hiddenStates, 1, embedSize);
+		//WxGrad Wrong HERE
+		WxGrad = util::matMul(dgates->back(), x, hiddenStates, 1, embedSize);
 
 	}
 
-	void GateLayer::updateWb(float lr) {
+	void GateLayer::updateWb() {
 		int h = hiddenStates;
 		int e = embedSize;
 		Wh = util::matElem(Wh, util::matMulScal(WhGrad, lr, h, h), h, h, '-');
@@ -101,98 +101,98 @@ namespace gateLayer {
 	/****************************OutputLayer Implementation***************************/
 
 	//TODO self.delta_h_list[-1] = delta_h
-	void OutputGate::calDelta(float* x, basicLayer::OutputsDelta& datas) 
+	void OutputGate::calDeltak(basicLayer::OutputsDelta* datas, int k) 
 	{
-		auto ogs = datas.ogs;
-		auto dhs = datas.dhs;
-		auto cgs = datas.cgs;
+		auto og = datas->ogs[k];
+		auto dh = datas->dhs[k];
+		auto cg = datas->cgs[k];
 		
-		for (int k = curTime; k > 0; k--) {
-			util::tanh(cgs[k], hiddenStates);
-			util::sigmoidPrime(ogs[k], hiddenStates);
-			datas.dos[k] = util::matElem(util::matElem(dhs[k],
-				cgs[k], hiddenStates, 1, '*'),
-				ogs[k], hiddenStates, 1, '*');
-		}
+		util::tanh(cg, hiddenStates);
+		util::sigmoidPrime(og, hiddenStates);
+		datas->dos[k] = util::matElem(util::matElem(dh,
+			cg, hiddenStates, 1, '*'),
+			og, hiddenStates, 1, '*');
+
 
 	}
 
 	/****************************InputLayer Implementation***************************/
 
-	void InputGate::calDelta(float* x, basicLayer::OutputsDelta& datas)
+	void InputGate::calDeltak(basicLayer::OutputsDelta* datas, int k)
 	{
-		auto igs = datas.igs;
-		auto ogs = datas.ogs;
-		auto dhs = datas.dhs;
-		auto cgs = datas.cgs;
-		auto cts = datas.cts;
+		auto ig = datas->igs[k];
+		auto og = datas->ogs[k];
+		auto dh = datas->dhs[k];
+		auto cg = datas->cgs[k];
+		auto ct = datas->cts[k];
 
-		for (int k = curTime; k > 0; k--) {
-			util::tanh(cgs[k], hiddenStates);
-			util::tanhPrime(cgs[k], hiddenStates);
-			util::sigmoidPrime(igs[k], hiddenStates);
-			datas.ogs[k] = util::matElem(util::matElem(util::matElem(util::matElem(dhs[k],
-				ogs[k], hiddenStates, 1, '*'),
-				cgs[k], hiddenStates, 1, '*'),
-				cts[k], hiddenStates, 1, '*'),
-				igs[k], hiddenStates, 1, '*');
-		}
+
+		util::tanh(cg, hiddenStates);
+		util::tanhPrime(cg, hiddenStates);
+		util::sigmoidPrime(ig, hiddenStates);
+		datas->dis[k] = util::matElem(util::matElem(util::matElem(util::matElem(dh,
+			og, hiddenStates, 1, '*'),
+			cg, hiddenStates, 1, '*'),
+			ct, hiddenStates, 1, '*'),
+			ig, hiddenStates, 1, '*');
+
 
 	}
 
 	/****************************ForgetLayer Implementation***************************/
 
-	void ForgetGate::calDelta(float* x, basicLayer::OutputsDelta& datas)
+	void ForgetGate::calDeltak(basicLayer::OutputsDelta* datas, int k)
 	{
-		auto fgs = datas.fgs;
-		auto ogs = datas.ogs;
-		auto dhs = datas.dhs;
-		auto cgs = datas.cgs;
-		auto cts = datas.cts;
+		auto fg = datas->fgs[k];
+		auto og = datas->ogs[k];
+		auto dh = datas->dhs[k];
+		auto cg = datas->cgs[k];
+		auto cp = datas->cgs[k - 1];
+		auto ct = datas->cts[k];
 
-		for (int k = curTime; k > 0; k--) {
-			util::tanh(cgs[k], hiddenStates);
-			util::tanhPrime(cgs[k], hiddenStates);
-			util::sigmoidPrime(fgs[k], hiddenStates);
-			datas.ogs[k] = util::matElem(util::matElem(util::matElem(util::matElem(dhs[k],
-				ogs[k], hiddenStates, 1, '*'),
-				cgs[k], hiddenStates, 1, '*'),
-				cgs[k - 1], hiddenStates, 1, '*'),
-				fgs[k], hiddenStates, 1, '*');
-		}
+
+		util::tanh(cg, hiddenStates);
+		util::tanhPrime(cg, hiddenStates);
+		util::sigmoidPrime(fg, hiddenStates);
+		datas->dfs[k] = util::matElem(util::matElem(util::matElem(util::matElem(dh,
+			og, hiddenStates, 1, '*'),
+			cg, hiddenStates, 1, '*'),
+			cp, hiddenStates, 1, '*'),
+			fg, hiddenStates, 1, '*');
+
 
 	}
 
 	/****************************CellTempLayer Implementation***************************/
 
-	void CellTGate::calDelta(float* x, basicLayer::OutputsDelta& datas)
+	void CellTGate::calDeltak(basicLayer::OutputsDelta* datas, int k)
 	{
-		auto igs = datas.fgs;
-		auto ogs = datas.ogs;
-		auto dhs = datas.dhs;
-		auto cgs = datas.cgs;
-		auto cts = datas.cts;
+		auto ig = datas->fgs[k];
+		auto og = datas->ogs[k];
+		auto dh = datas->dhs[k];
+		auto cg = datas->cgs[k];
+		auto ct = datas->cts[k];
 
-		for (int k = curTime; k > 0; k--) {
-			util::tanh(cgs[k], hiddenStates);
-			util::tanhPrime(cgs[k], hiddenStates);
-			util::tanhPrime(cts[k], hiddenStates);
-			datas.ogs[k] = util::matElem(util::matElem(util::matElem(util::matElem(dhs[k],
-				ogs[k], hiddenStates, 1, '*'),
-				cgs[k], hiddenStates, 1, '*'),
-				igs[k], hiddenStates, 1, '*'),
-				cts[k], hiddenStates, 1, '*');
-		}
+
+		util::tanh(cg, hiddenStates);
+		util::tanhPrime(cg, hiddenStates);
+		util::tanhPrime(ct, hiddenStates);
+		datas->dcs[k] = util::matElem(util::matElem(util::matElem(util::matElem(dh,
+			og, hiddenStates, 1, '*'),
+			cg, hiddenStates, 1, '*'),
+			ig, hiddenStates, 1, '*'),
+			ct, hiddenStates, 1, '*');
+
 
 	}
 
 	/****************************Special Layers Implementation***************************/
 
-	float* CellGate::forward(basicLayer::OutputsDelta datas) {
-		auto fg = datas.fgs[curTime];
-		auto cgprev = datas.cgs[curTime - 1];
-		auto ig = datas.igs[curTime];
-		auto ct = datas.cts[curTime];
+	float* CellGate::forward(basicLayer::OutputsDelta* datas) {
+		float* fg = datas->fgs[curTime];
+		float* cgprev = datas->cgs[curTime - 1];
+		float* ig = datas->igs[curTime];
+		float* ct = datas->cts[curTime];
 
 		float* fc = util::matElem(fg, cgprev, hiddenStates, hiddenStates, '*');
 		float* ic = util::matElem(ig, ct, hiddenStates, hiddenStates, '*');
@@ -200,9 +200,9 @@ namespace gateLayer {
 	}
 
 
-	float* HiddenGate::forward(basicLayer::OutputsDelta datas) {
-		auto og = datas.ogs[curTime];
-		auto ct = datas.cts[curTime];
+	float* HiddenGate::forward(basicLayer::OutputsDelta* datas) {
+		float* og = datas->ogs[curTime];
+		float* ct = datas->cts[curTime];
 
 		util::tanh(ct, hiddenStates);
 		return util::matElem(og, ct, hiddenStates, 1, '*');

@@ -20,15 +20,16 @@ namespace embedLayer {
 		int Wlen, dictSize;
 
 	public:
-		EmbedLayer(int embeds, int times, int hid, int cat, int dic);
+		EmbedLayer(int embeds, int times, int hid, int cat, float lr, int dic);
 		~EmbedLayer();
 
 		void init() override;
 		inline void WbGradInit();
+		
+		float* forward(int textCode)override;
 
-		float* forward(int textCode);
-		void calGrad(float* delta, int textCode);
-		void updateWb(float lr);
+		void calGrad(float* delta, int textCode)override;
+		void updateWb()override;
 
 		void showW() const;
 

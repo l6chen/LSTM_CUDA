@@ -18,60 +18,62 @@ namespace gateLayer {
         float* Wh, * Wx, * b;
 		float* WhGrad, * WxGrad, * bGrad;
 		int Whlen, Wxlen, blen;
-		int curTime;
+		int curTime = 1;
 
 	public:
-		GateLayer(int embeds, int times, int hid, int cat);
+		GateLayer(int embeds, int times, int hid, int cat, float lr);
 		~GateLayer();
 
 		void init() override;
 		inline void WbGradInit();
 
-		float* forward(float* x, float* h, void (*activate)(float* A, int n)) override;
-		void calGrad(float* x, basicLayer::OutputsDelta& datas, std::vector<float*> dgates);
-		void updateWb(float lr);
+		float* forward(float* x, float* h, void (*activate)(float* A, int n))override;
+		void calGrad(float* x, basicLayer::OutputsDelta* datas, std::vector<float*>* dgates)override;
+		void updateWb()override;
 
 		void showW() const;
 		void showb() const;
 		void showforward(float* in) const;
 
-		float* getWh() const { return Wh; }
+		float* getWh() const override{ return Wh; }
+		float* getWx() const override{ return Wx; }
+
 	};
 
 	/*******************************Four Gates with Parameter***********************************/
 	class OutputGate : public GateLayer {
 	public:
-		OutputGate(int embeds, int times, int hid, int cat) :
-			GateLayer(embeds, times, hid, cat) { }
+		OutputGate(int embeds, int times, int hid, int cat, float lr) :
+			GateLayer(embeds, times, hid, cat, lr) { }
 
-		void calDelta(float* x, basicLayer::OutputsDelta& datas);
+		void calDeltak(basicLayer::OutputsDelta* datas, int k) override;
 		~OutputGate() {};
 	};
 
 	class InputGate : public GateLayer {
 	public:
-		InputGate(int embeds, int times, int hid, int cat) :
-			GateLayer(embeds, times, hid, cat) {}
+		InputGate(int embeds, int times, int hid, int cat, float lr) :
+			GateLayer(embeds, times, hid, cat, lr) {}
 
-		void calDelta(float* x, basicLayer::OutputsDelta& datas);
+		void calDeltak(basicLayer::OutputsDelta* datas, int k) override;
 		~InputGate() {};
 	};
 
 	class ForgetGate : public GateLayer {
 	public:
-		ForgetGate(int embeds, int times, int hid, int cat) :
-			GateLayer(embeds, times, hid, cat) {}
+		ForgetGate(int embeds, int times, int hid, int cat, float lr) :
+			GateLayer(embeds, times, hid, cat, lr) {}
 
-		void calDelta(float* x, basicLayer::OutputsDelta& datas);
+		void calDeltak(basicLayer::OutputsDelta* datas, int k) override;
 		~ForgetGate() {};
 	};
 
 	class CellTGate : public GateLayer {
 	public:
-		CellTGate(int embeds, int times, int hid, int cat) :
-			GateLayer(embeds, times, hid, cat) {}
+		CellTGate(int embeds, int times, int hid, int cat, float lr) :
+			GateLayer(embeds, times, hid, cat, lr) {}
 
-		void calDelta(float* x, basicLayer::OutputsDelta& datas);
+		void calDeltak(basicLayer::OutputsDelta* datas, int k) override;
 		~CellTGate() {};
 	};
 
@@ -79,20 +81,20 @@ namespace gateLayer {
 
 	class CellGate : public basicLayer::BasicLayer {
 	private:
-		int curTime;
+		int curTime = 0;
 	public:
-		CellGate(int embeds, int times, int hid, int cat) :
-			basicLayer::BasicLayer(embeds, times, hid, cat) {}
-		float* forward(basicLayer::OutputsDelta datas);
+		CellGate(int embeds, int times, int hid, int cat, float lr) :
+			basicLayer::BasicLayer(embeds, times, hid, cat, lr) {}
+		float* forward(basicLayer::OutputsDelta* datas) override;
 	};
 
 	class HiddenGate : public basicLayer::BasicLayer {
 	private:
-		int curTime;
+		int curTime = 0;
 	public:
-		HiddenGate(int embeds, int times, int hid, int cat) :
-			basicLayer::BasicLayer(embeds, times, hid, cat) {}
-		float* forward(basicLayer::OutputsDelta datas);
+		HiddenGate(int embeds, int times, int hid, int cat, float lr) :
+			basicLayer::BasicLayer(embeds, times, hid, cat, lr) {}
+		float* forward(basicLayer::OutputsDelta* datas) override;
 	};
 }
 

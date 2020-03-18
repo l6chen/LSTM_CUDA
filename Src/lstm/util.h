@@ -21,7 +21,7 @@ namespace util {
 	void matMul_inplace(float* out, float* matA, float* matB, int m, int n, int k);//[m,n] * [n,k]
 	void matElem_inplace(float* matA, float* matB, int m, int n, char op);
 	void matTrans_inplace(float* matA, int height, int width);
-	void softmax(float* A, int n, const int categories);
+	void softmax(float* A, int n);
 	void tanh(float* A, int n);
 	void sigmoid(float* A, int n);
 	void tanhPrime(float* matA, int n);
