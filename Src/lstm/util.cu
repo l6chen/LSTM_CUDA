@@ -13,7 +13,7 @@
 #include <curand_kernel.h>
 #include "util.h"
 #include "../common/common.h"
-#define BLOCK_SIZE 32
+#define BLOCK_SIZE 128
 
 
 namespace util {

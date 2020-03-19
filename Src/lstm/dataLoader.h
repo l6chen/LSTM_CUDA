@@ -28,14 +28,14 @@ namespace dataLoader {
 		float _trainPer;
 		const std::vector<std::vector<int>> oneHotCoding(std::vector<std::string> labels);//deprecated
 		void writeWashed(std::vector<std::string> washed);
-		DataSets datasplitter(const std::vector<std::vector<int>> textCode,
+		DataSets* datasplitter(const std::vector<std::vector<int>> textCode,
 			const std::vector<int> labelCode);
 	public:
 		DataLoader(float trainPer = 0.8);
 		~DataLoader(){}
 		std::vector<std::string> getsentiments() { return _sentiments; }
 		std::vector<std::string> gettexts() { return _texts; }
-		DataSets load();
+		DataSets* load();
 	};
 }
 

@@ -14,7 +14,7 @@
 
 namespace embedLayer {
 	class EmbedLayer : public basicLayer::BasicLayer {
-	protected:
+	private:
 		float* W;
 		float* WGrad;
 		int Wlen, dictSize;

@@ -4,7 +4,7 @@
 *	This file defines the data structure for grid
 */
 #include "basicLayer.h"
-#define BLOCK_SIZE 32
+#define BLOCK_SIZE 128
 
 namespace basicLayer {
 
@@ -86,6 +86,17 @@ namespace basicLayer {
 			if (ix < nx && iy < ny)
 				d_W[idx] = curand_uniform(&rndstates[idx]) * 2.0E-4 - 1.0E-4;
 		}
+	}
+
+	__global__ void embedweightbiasTruncInitGPU(int nx, int ny, float* d_W,
+		curandState* rndstates) {// truncated uniform
+		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
+		unsigned int iy = blockIdx.y;
+		unsigned int idx = iy * nx + ix;
+
+		if (ix < nx && iy < ny)
+			d_W[idx] = curand_uniform(&rndstates[idx]) * 2.0E-4 - 1.0E-4;
+	
 	}
 
 	__global__ void denseweightbiasGradInitGPU(int nx, int ny, float* d_W,
@@ -312,11 +323,14 @@ namespace basicLayer {
 		//randomlize weights and bias
 		int m = embedSize;
 		int n = Wlen / m;
-
+		std::cout << Wlen << "\n";
+		std::cout << m << " " << n <<"\n";
+		
 		dim3 block(BLOCK_SIZE, 1);
 		dim3 grid((n + block.x - 1) / block.x, m);
-		denseweightbiasTruncInitGPU << <grid, block >> > (n, m,
-			d_W, d_W, rndstates, 0);
+		std::cout << (n + block.x - 1) / block.x;
+		embedweightbiasTruncInitGPU << <grid, block >> > (n, m,
+			d_W, rndstates);
 
 		//transfer data from device to host
 		CHECK(cudaMemcpy(W, d_W, Wlen * sizeof(float), cudaMemcpyDeviceToHost));

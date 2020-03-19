@@ -36,7 +36,7 @@ namespace denseLayer {
 	}
 
 	inline void DenseLayer::WbGradInit() {
-		denseweightbiasGradInit(W, b, Wlen, blen);
+		denseweightbiasGradInit(WGrad, bGrad, Wlen, blen);
 	}
 
 	float* DenseLayer::forward(float* x, float* h, void (*activate)(float* A, int n))

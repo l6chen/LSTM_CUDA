@@ -33,7 +33,7 @@ namespace embedLayer {
 	}
 
 	inline void EmbedLayer::WbGradInit() {
-		embedweightGradInit(W, Wlen);
+		embedweightGradInit(WGrad, Wlen);
 	}
 
 	float* EmbedLayer::forward(int textCode)

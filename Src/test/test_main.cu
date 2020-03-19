@@ -21,7 +21,7 @@ int main() {
 	std::cout << DELIMITER << std::endl << "Test Data Loader" << std::endl;
 
 	dataLoader::DataLoader loader(0.8);
-	dataLoader::DataSets ds = loader.load();
+	dataLoader::DataSets* ds = loader.load();
 
 	//Test Elementwise operations
 	std::cout << DELIMITER << std::endl << "Test Elementwise operations" << std::endl;

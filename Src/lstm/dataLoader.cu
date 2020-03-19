@@ -97,6 +97,7 @@ namespace dataLoader {
 				}
 			}
 		}
+		dict.insert({ " ", 0 });
 		return dict;
 	}
 
@@ -125,13 +126,15 @@ namespace dataLoader {
 
 	const std::vector<std::vector<int>> textEncode(
 		const std::vector<std::vector<std::string>> tokens,
-		const std::unordered_map<std::string, int> dict) {
+		const std::unordered_map<std::string, int> dict, int maxlen) {
 		std::vector<std::vector<int>> textCode;
 		for (auto token : tokens) {
-			std::vector<int> senCode(token.size(), 0);
+			std::vector<int> senCode(maxlen, 0);
 			for (int i = 0; i < token.size(); i++) {
-				std::string t = token[i];
-				senCode[i] = dict.at(t);
+				if (i < token.size()) {
+					std::string t = token[i];
+					senCode[i] = dict.at(t);
+				}		
 			}
 			textCode.push_back(senCode);
 		}
@@ -160,12 +163,12 @@ namespace dataLoader {
 		return labelCode;
 	}
 
-	DataSets DataLoader::datasplitter(const std::vector<std::vector<int>> textCode,
+	DataSets* DataLoader::datasplitter(const std::vector<std::vector<int>> textCode,
 		const std::vector<int> labelCode) {
 
-		DataSets splitted;
-		splitted.sentenLen = 0;
-		int& sLen = splitted.sentenLen;
+		DataSets* splitted = new DataSets();
+		splitted->sentenLen = 0;
+		int& sLen = splitted->sentenLen;
 		if (textCode.size() != labelCode.size()) {
 			std::cout << textCode.size() << " " << labelCode.size();
 			throw "text and label mismatch!";
@@ -179,30 +182,33 @@ namespace dataLoader {
 			std::vector<int> draw(sampleSize);
 			for (int i = 0; i < sampleSize; i++) {
 				draw[i] = i;
+				if (textCode[i].size() != 29) {
+					throw "text length mismatch!";
+				}
 			}
 			std::random_shuffle(draw.begin(), draw.end());
 			for (int i = 0; i < trainSize; i++) {
-				splitted.trainX.push_back(textCode[draw[i]]);
-				splitted.trainY.push_back(labelCode[draw[i]]);
+				splitted->trainX.push_back(textCode[draw[i]]);
+				splitted->trainY.push_back(labelCode[draw[i]]);
 				sLen = max(sLen, (int)textCode[draw[i]].size());
 			}
 			for (int i = 0; i < testSize; i++) {
 				int drawid = i + trainSize;
-				splitted.testX.push_back(textCode[draw[drawid]]);
-				splitted.testY.push_back(labelCode[draw[drawid]]);
+				splitted->testX.push_back(textCode[draw[drawid]]);
+				splitted->testY.push_back(labelCode[draw[drawid]]);
 				sLen = max(sLen, (int)textCode[draw[drawid]].size());
 			}
 			for (int i = 0; i < valSize; i++) {
 				int drawid = i + trainSize + testSize;
-				splitted.valX.push_back(textCode[draw[drawid]]);
-				splitted.valY.push_back(labelCode[draw[drawid]]);
+				splitted->valX.push_back(textCode[draw[drawid]]);
+				splitted->valY.push_back(labelCode[draw[drawid]]);
 				sLen = max(sLen, (int)textCode[draw[drawid]].size());
 			}
 		}
 		return splitted;
 	}
 
-	DataSets DataLoader::load() {
+	DataSets* DataLoader::load() {
 		std::string sentiPath = _datasetDir + "/sentiment.txt";
 		std::string textPath = _datasetDir + "/text.txt";
 		loadTxt(sentiPath, _sentiments, numOfSamples);
@@ -210,13 +216,13 @@ namespace dataLoader {
 		wash(_texts);
 		const std::vector<std::vector<std::string>> tokens = tokenizer(_texts);
 		const std::unordered_map<std::string, int> dict = makeDict(tokens);
-		const std::vector<std::vector<int>> textCode = textEncode(tokens, dict);
+		const std::vector<std::vector<int>> textCode = textEncode(tokens, dict, 29);
 		const std::vector<int> labelCode = labelEncode(_sentiments);
-		DataSets ds = datasplitter(textCode, labelCode);
-		ds.dictLen = dict.size();
-		std::cout << ds.trainX[0][0] << " " << ds.trainY[0] << std::endl;//for debug
+		DataSets* ds = datasplitter(textCode, labelCode);
+		ds->dictLen = dict.size();
+		std::cout << ds->trainX[0][0] << " " << ds->trainY[0] << std::endl;//for debug
 		std::cout << dict.size() <<std::endl;//for debug
-		std::cout << ds.sentenLen << std::endl;
+		std::cout << "sentenLen" << ds->sentenLen << std::endl;
 		return ds;
 	}
 

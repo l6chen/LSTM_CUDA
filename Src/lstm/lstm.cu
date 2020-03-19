@@ -53,7 +53,7 @@ namespace lstm {
 		std::vector<std::vector<int>>& trainX = ds->trainX;
 		std::vector<int>& trainY = ds->trainY;
 
-
+		std::cout << "Training Start!" << "\n";
 		for (int ep = 0; ep < epoch; ep++) {
 			float loss = 0;
 			for (int sample = 0; sample < trainY.size(); sample++) {
