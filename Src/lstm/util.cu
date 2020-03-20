@@ -13,7 +13,7 @@
 #include <curand_kernel.h>
 #include "util.h"
 #include "../common/common.h"
-#define BLOCK_SIZE 128
+#define BLOCK_SIZE 32
 
 
 namespace util {
@@ -26,23 +26,23 @@ namespace util {
 			switch (op)
 			{
 			case '+':
-				d_A[idx] += d_B[idx];
+				d_A[idx] = d_A[idx] + d_B[idx];
 				break;
 			case '-':
-				d_A[idx] -= d_B[idx];
+				d_A[idx] = d_A[idx] * d_B[idx];
 				break;
 			case '*':
-				d_A[idx] *= d_B[idx];
+				d_A[idx] = d_A[idx] * d_B[idx];
 				break;
 			}
 	}
 
-	__global__ void matMulScalGPU(float* d_A, float* d_S, int nx, int ny) {
+	__global__ void matMulScalGPU(float* d_A, float* scal, int nx, int ny) {
 		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
 		unsigned int iy = blockIdx.y;
 		unsigned int idx = iy * nx + ix;
 		if (ix < nx && iy < ny)
-			d_A[idx] *= d_S[0];
+			d_A[idx] = d_A[idx] * scal[0];
 	}
 
 	__global__ void matMulGPU(float* out, float* d_A, float* d_B, int ny, int nx, int nz)
@@ -79,22 +79,30 @@ namespace util {
 		}
 	}
 
+	__device__ float sigmoidOne(float input) {
+		float output = 0.0f;
+		//if (input >= 0)
+		output = 1.0f / (1.0f + expf(-input));
+		//else
+		//	output = expf(input) / (1.0f + expf(input));
+		return output;
+	}
+
 	__global__ void tanhActivation(float* d_A, int m)
 	{
 		int idx = threadIdx.x + blockIdx.x * blockDim.x;
-		float exp1 = expf(d_A[idx]);
-		float exp2 = expf(-d_A[idx]);
 		if (idx < m) {
-			d_A[idx] = (exp1 - exp2) / (exp1 + exp2);
+
+			d_A[idx] = std::tanh(d_A[idx]);
 		}
 	}
 
 	__global__ void sigmoidActivation(float *d_A, int m)
 	{
 		int idx = threadIdx.x + blockIdx.x * blockDim.x;
-		float exp = expf(d_A[idx]);
+		
 		if(idx < m){
-			d_A[idx] = exp / (1.0f + exp);
+			d_A[idx] = sigmoidOne(d_A[idx]);
 		}
 		
 	}
@@ -102,13 +110,13 @@ namespace util {
 	__global__ void tanhPrimeGPU(float* d_A, int nx) {
 		unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 		if (idx < nx)
-			d_A[idx] = 1.0f - d_A[idx] * d_A[idx];
+			d_A[idx] = 1.0f - (std::tanh(d_A[idx])) * (std::tanh(d_A[idx]));
 	}
 
 	__global__ void sigmoidPrimeGPU(float* d_A, int nx) {
 		unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 		if (idx < nx)
-			d_A[idx] = (1.0f - d_A[idx]) * d_A[idx];
+			d_A[idx] = (1.0f - sigmoidOne(d_A[idx])) * sigmoidOne(d_A[idx]);
 	}
 
 	__global__ void CrossEntropyLossGPU(float* d_out, float* d_pred,
@@ -163,6 +171,8 @@ namespace util {
 		dim3 block(BLOCK_SIZE, 1);
 		dim3 grid((n + block.x - 1) / block.x, m);
 		matElemGPU << <grid, block >> > (d_A, d_B, n, m, op);
+		//sync
+		cudaDeviceSynchronize();
 
 		//transfer data from device to host
 		CHECK(cudaMemcpy(matA, d_A, m * n * sizeof(float), cudaMemcpyDeviceToHost));
@@ -182,6 +192,8 @@ namespace util {
 		CHECK(cudaMalloc((void**)& d_out, height * width * sizeof(float)));
 		CHECK(cudaMemcpy(d_A, matA, height * width * sizeof(float), cudaMemcpyHostToDevice));
 		TransposeGPU << <grid, block >> > (d_out, d_A, height, width);
+		//sync
+		cudaDeviceSynchronize();
 		CHECK(cudaMemcpy(matA, d_out, height * width * sizeof(float), cudaMemcpyDeviceToHost));
 
 		cudaFree(d_A);
@@ -202,6 +214,8 @@ namespace util {
 		dim3 grid((k + block.x - 1) / block.x, (m + block.y - 1) / block.y);
 
 		matMulGPU << <grid, block >> > (d_out, d_A, d_B, m, n, k);
+		//sync
+		cudaDeviceSynchronize();
 		CHECK(cudaMemcpy(out, d_out, m * k * sizeof(float), cudaMemcpyDeviceToHost));
 		cudaFree(d_out);
 		cudaFree(d_A);
@@ -210,7 +224,7 @@ namespace util {
 
 	/*********************************Outplace Matrix Functions*******************************/
 
-	float* matElem(const float* matA, const float* matB, int m, int n, char op) {
+	float* matElem(float* matA, float* matB, int m, int n, char op) {
 		float* d_A, * d_B;
 		float* out = new float[m * n];
 		//handle supported operation for + - *
@@ -233,6 +247,9 @@ namespace util {
 		dim3 grid((n + block.x - 1) / block.x, m);
 		matElemGPU << <grid, block >> > (d_A, d_B, n, m, op);
 
+		//sync
+		cudaDeviceSynchronize();
+
 		//transfer data from device to host
 		CHECK(cudaMemcpy(out, d_A, m * n * sizeof(float), cudaMemcpyDeviceToHost));
 
@@ -240,10 +257,12 @@ namespace util {
 		CHECK(cudaFree(d_A));
 		CHECK(cudaFree(d_B));
 
+		//cudaDeviceReset();
+
 		return out;
 	}
 
-	float* matMulScal(const float* matA, float scal, int m, int n) {
+	float* matMulScal(float* matA, float scal, int m, int n) {
 		float* d_A, * d_S;
 		float* out = new float[m * n];
 
@@ -260,12 +279,17 @@ namespace util {
 		dim3 grid((n + block.x - 1) / block.x, m);
 		matMulScalGPU << <grid, block >> > (d_A, d_S, n, m);
 
+		//sync
+		cudaDeviceSynchronize();
+
 		//transfer data from device to host
 		CHECK(cudaMemcpy(out, d_A, m * n * sizeof(float), cudaMemcpyDeviceToHost));
 
 		//free device memory
 		CHECK(cudaFree(d_A));
 		CHECK(cudaFree(d_S));
+
+		cudaDeviceReset();
 
 		return out;
 	}
@@ -282,6 +306,9 @@ namespace util {
 
 		dim3 block(BLOCK_SIZE, BLOCK_SIZE);
 		dim3 grid((k + block.x - 1) / block.x, (m + block.y - 1) / block.y);
+
+		//sync
+		cudaDeviceSynchronize();
 
 		matMulGPU << <grid, block >> > (d_out, d_A, d_B, m, n, k);
 		CHECK(cudaMemcpy(out, d_out, m * k * sizeof(float), cudaMemcpyDeviceToHost));
@@ -303,6 +330,10 @@ namespace util {
 		CHECK(cudaMalloc((void**)& d_out, height * width * sizeof(float)));
 		CHECK(cudaMemcpy(d_A, matA, height * width * sizeof(float), cudaMemcpyHostToDevice));
 		TransposeGPU << <grid, block >> > (d_out, d_A, height, width);
+
+		//sync
+		cudaDeviceSynchronize();
+
 		CHECK(cudaMemcpy(out, d_out, height * width * sizeof(float), cudaMemcpyDeviceToHost));
 
 		cudaFree(d_A);
@@ -313,7 +344,7 @@ namespace util {
 
 
 	/*********************************Activation Functions*******************************/
-	void softmax(float* A, int n){
+	void softmax_inplace(float* A, int n){
 		float *d_A;
 		int categories = 3;
 		CHECK(cudaMalloc((void**)&d_A, n * sizeof(float)));
@@ -321,12 +352,14 @@ namespace util {
 		dim3 block(BLOCK_SIZE);
 		dim3 grid((n + block.x - 1) / block.x);
 		softmaxGPU << <grid, block >> > (d_A, n, categories);
+		//sync
+		cudaDeviceSynchronize();
 		CHECK(cudaMemcpy(A, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
 		cudaFree(d_A);
 	
 	}
 	
-	void tanh(float* A, int n){
+	void tanh_inplace(float* A, int n){
 
 		float *d_A;
 		CHECK(cudaMalloc((void**)&d_A, n * sizeof(float)));
@@ -334,26 +367,29 @@ namespace util {
 		dim3 block(BLOCK_SIZE);
 		dim3 grid((n + block.x - 1) / block.x);
 		tanhActivation << <grid, block >> > (d_A, n);
+		//sync
+		cudaDeviceSynchronize();
 		CHECK(cudaMemcpy(A, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
 		cudaFree(d_A);
 	
 	}
-	
-	
-	void sigmoid(float *A, int n){
-		
-		float *d_A;
-		CHECK(cudaMalloc((void**)&d_A, n * sizeof(float)));
+
+	void sigmoid_inplace(float* A, int n) {
+
+		float* d_A;
+		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
 		CHECK(cudaMemcpy(d_A, A, n * sizeof(float), cudaMemcpyHostToDevice));
 		dim3 block(BLOCK_SIZE);
 		dim3 grid((n + block.x - 1) / block.x);
 		sigmoidActivation << <grid, block >> > (d_A, n);
+		//sync
+		cudaDeviceSynchronize();
 		CHECK(cudaMemcpy(A, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
 		cudaFree(d_A);
 	}
 
-	void sigmoidPrime(float *A, int n) {
-		
+	void sigmoidPrime_inplace(float* A, int n) {
+
 		float* d_A;
 		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
 		CHECK(cudaMemcpy(d_A, A, n * sizeof(float), cudaMemcpyHostToDevice));
@@ -362,13 +398,15 @@ namespace util {
 		dim3 grid((n + block.x - 1) / block.x);
 
 		sigmoidPrimeGPU << <grid, block >> > (d_A, n);
+		//sync
+		cudaDeviceSynchronize();
 		CHECK(cudaMemcpy(A, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
 		cudaFree(d_A);
 
 	}
 
 
-	void tanhPrime(float* matA, int n) {
+	void tanhPrime_inplace(float* matA, int n) {
 		float* d_A;
 		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
 		CHECK(cudaMemcpy(d_A, matA, n * sizeof(float), cudaMemcpyHostToDevice));
@@ -377,8 +415,101 @@ namespace util {
 		dim3 grid((n + block.x - 1) / block.x);
 
 		tanhPrimeGPU << <grid, block >> > (d_A, n);
+		//sync
+		cudaDeviceSynchronize();
 		CHECK(cudaMemcpy(matA, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
 		cudaFree(d_A);
+	}
+
+	float* tanh(float* A, int n) {
+
+		float* out = new float[n];
+		float* d_A;
+		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, A, n * sizeof(float), cudaMemcpyHostToDevice));
+		dim3 block(BLOCK_SIZE);
+		dim3 grid((n + block.x - 1) / block.x);
+		tanhActivation << <grid, block >> > (d_A, n);
+		//sync
+		cudaDeviceSynchronize();
+		CHECK(cudaMemcpy(out, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
+		cudaFree(d_A);
+		return out;
+
+	}
+	
+
+
+	float* softmax(float* A, int n) {
+
+		float* out = new float[n];
+		float* d_A;
+		int categories = 3;
+		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, A, n * sizeof(float), cudaMemcpyHostToDevice));
+		dim3 block(BLOCK_SIZE);
+		dim3 grid((n + block.x - 1) / block.x);
+		softmaxGPU << <grid, block >> > (d_A, n, categories);
+		//sync
+		cudaDeviceSynchronize();
+		CHECK(cudaMemcpy(out, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
+		cudaFree(d_A);
+		return out;
+
+	}
+
+	float* sigmoid(float* A, int n) {
+		float* out = new float[n];
+		float* d_A;
+		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, A, n * sizeof(float), cudaMemcpyHostToDevice));
+		dim3 block(BLOCK_SIZE);
+		dim3 grid((n + block.x - 1) / block.x);
+		sigmoidActivation << <grid, block >> > (d_A, n);
+		//sync
+		cudaDeviceSynchronize();
+		CHECK(cudaMemcpy(out, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
+		cudaFree(d_A);
+		return out;
+	}
+
+	float* sigmoidPrime(float *A, int n) {
+		
+		float* out = new float[n];
+		float* d_A;
+		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, A, n * sizeof(float), cudaMemcpyHostToDevice));
+
+		dim3 block(BLOCK_SIZE);
+		dim3 grid((n + block.x - 1) / block.x);
+
+		sigmoidPrimeGPU << <grid, block >> > (d_A, n);
+		//sync
+		cudaDeviceSynchronize();
+		CHECK(cudaMemcpy(out, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
+		cudaFree(d_A);
+
+		return out;
+	}
+
+
+	float* tanhPrime(float* matA, int n) {
+
+		float* out = new float[n];
+		float* d_A;
+		CHECK(cudaMalloc((void**)& d_A, n * sizeof(float)));
+		CHECK(cudaMemcpy(d_A, matA, n * sizeof(float), cudaMemcpyHostToDevice));
+
+		dim3 block(BLOCK_SIZE);
+		dim3 grid((n + block.x - 1) / block.x);
+
+		tanhPrimeGPU << <grid, block >> > (d_A, n);
+		//sync
+		cudaDeviceSynchronize();
+		CHECK(cudaMemcpy(out, d_A, n * sizeof(float), cudaMemcpyDeviceToHost));
+		cudaFree(d_A);
+
+		return out;
 	}
 
 	float crossEntropyLoss(float* pred, float* oneHot, int m, int n, bool iftest) { 
@@ -394,6 +525,8 @@ namespace util {
 		dim3 grid((n + block.x - 1) / block.x);
 
 		CrossEntropyLossGPU << <grid, block >> > (d_out, d_pred, d_oneHot, m, n, iftest);
+		//sync
+		cudaDeviceSynchronize();
 		CHECK(cudaMemcpy(out, d_out, m * sizeof(float), cudaMemcpyDeviceToHost));
 
 		float avgcost = 0;

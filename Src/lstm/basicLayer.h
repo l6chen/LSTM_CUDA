@@ -49,7 +49,7 @@ namespace basicLayer {
 			        hiddenStates(hid), categories(cat), lr(lrate) {}
 		virtual ~BasicLayer() {}
 
-		virtual float* forward(float* x, float* h, void (*activate)(float* A, int n)) { return nullptr; }
+		virtual float* forward(float* x, float* h, float* (*activate)(float* A, int n)) { return nullptr; }
 		virtual float* forward(int textCode) { return nullptr; }
 		virtual float* forward(basicLayer::OutputsDelta* datas) { return nullptr; }
 
@@ -60,15 +60,17 @@ namespace basicLayer {
 		virtual void calGrad(float* x, basicLayer::OutputsDelta* datas, 
 			std::vector<float*>* dgates){}
 		virtual void calGrad(float* delta, int textCode){}
+
 		virtual void updateWb(){}
 		virtual void calDeltak(basicLayer::OutputsDelta* datas, int k) {}
 
 		virtual float* getWh() const { return nullptr; }
 		virtual float* getWx() const { return nullptr; }
+		virtual void resetTime() { }
 
 		virtual void init() {}
 		float* concatVec(float* vecA, float* vecB, const int a, const int b);
-		void randInit();
+		void randInit(int m, int n);
 		void showVar() const;
 		void weightbiasTruncInit(float* Wh, float* Wx, float* b, 
 			const int Whlen, const int Wxlen, const int blen);
@@ -80,6 +82,9 @@ namespace basicLayer {
 			const int Wlen, const int blen);
 		void embedweightTruncInit(float* W, const int Wlen);
 		void embedweightGradInit(float* W, const int Wlen);
+		float* embedCalGrad(float* W, float* delta, int textCode, int nx, int ny);
+
+		
 
 	};
 }

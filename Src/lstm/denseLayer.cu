@@ -22,6 +22,9 @@ namespace denseLayer {
 		W = new float[Wlen];
 		b = new float[blen];
 
+		WGrad = new float[Wlen];
+		bGrad = new float[blen];
+
 		init();
 	}
 
@@ -36,15 +39,16 @@ namespace denseLayer {
 	}
 
 	inline void DenseLayer::WbGradInit() {
+
 		denseweightbiasGradInit(WGrad, bGrad, Wlen, blen);
 	}
 
-	float* DenseLayer::forward(float* x, float* h, void (*activate)(float* A, int n))
+	float* DenseLayer::forward(float* x, float* h, float* (*activate)(float* A, int n))
 	{
 		float* wh = util::matMul(W, h, categories, hiddenStates, 1);
 		float* out = util::matElem(wh, b, categories, 1, '+');
-		(*activate)(out, categories);
-		return out;
+		float* newout = (*activate)(out, categories);
+		return newout;
 	}
 
 	void DenseLayer::calGrad(float* delta, float* h)
@@ -83,6 +87,16 @@ namespace denseLayer {
 		std::cout << std::endl;
 	}
 
+	void DenseLayer::showGrad() {
+		WbGradInit();
+		for (int i = 0; i < Wlen; i++)
+			std::cout << WGrad[i] << " ";
+		std::cout << std::endl;
+		for (int i = 0; i < blen; i++)
+			std::cout << bGrad[i] << " ";
+		std::cout << std::endl;
+	}
+
 	float DenseLayer::calLoss(float* p, float* t) {
 		
 		return util::crossEntropyLoss(p, t, categories, 1);
@@ -91,9 +105,11 @@ namespace denseLayer {
 	float* DenseLayer::backward(float* h, float* y, float* t) {
 		float* delta = util::matElem(y, t, categories, 1, '-');
 		float* deltah = util::matMul(util::matTrans(W,
-			categories, hiddenStates), delta, hiddenStates, categories, 1);//may need 1-y^2
+			categories, hiddenStates), delta, hiddenStates, categories, 1);
 		calGrad(delta, h);
 		updateWb(lr);
 		return deltah;
+		//return util::matElem(deltah, util::tanhPrime(h, hiddenStates), hiddenStates,
+		//	1, '*');
 	}
 }

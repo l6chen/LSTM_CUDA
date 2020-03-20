@@ -262,8 +262,8 @@ namespace testUtil {
 	void testmatMulScal() {
 
 		std::string testtype = "Mul Scal";
-		int nx = 1 << 5;
-		int ny = 1 << 5;
+		int nx = 1 << 7;
+		int ny = 1 << 7;
 
 		int nxy = nx * ny;
 		int nBytes = nxy * sizeof(float);
@@ -296,7 +296,7 @@ namespace testUtil {
 		std::string testtype = "Mul";
 		int ny = 1 << 3;
 		int nx = 1 << 4;
-		int nz = 1;
+		int nz = 1 << 6;
 
 		int nxy = nx * ny, nyz = ny * nz, nxz = nx * nz;
 		int nxyB = nxy * sizeof(float), nyzB = nyz * sizeof(float),
@@ -337,8 +337,8 @@ namespace testUtil {
 	void testmatTranspose() {
 
 		std::string testtype = "Transpose";
-		int ny = 1 << 3;
-		int nx = 1 << 4;
+		int ny = 1 << 6;
+		int nx = 1 << 7;
 
 		int nxy = nx * ny;
 		int nBytes = nxy * sizeof(float);
@@ -383,7 +383,7 @@ namespace testUtil {
 		const float* tmpA = matA;
 
 		tanhOnHost(cpuM, tmpA, nx);
-		util::tanh(matA, nx);
+		util::tanh_inplace(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
 
@@ -412,7 +412,7 @@ namespace testUtil {
 		const float* tmpA = matA;
 
 		softmaxOnHost(cpuM, tmpA, nx);
-		util::softmax(matA, nx);
+		util::softmax_inplace(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
 		// free host memory
@@ -440,7 +440,7 @@ namespace testUtil {
 		const float* tmpA = matA;
 
 		sigmoidOnHost(cpuM, tmpA, nx);
-		util::sigmoid(matA, nx);
+		util::sigmoid_inplace(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
 		// free host memory
@@ -468,7 +468,7 @@ namespace testUtil {
 		const float* tmpA = matA;
 
 		tanhPrimeOnHost(cpuM, tmpA, nx);
-		util::tanhPrime(matA, nx);
+		util::tanhPrime_inplace(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
 		// free host memory
@@ -496,7 +496,7 @@ namespace testUtil {
 		const float* tmpA = matA;
 
 		sigmoidPrimeOnHost(cpuM, tmpA, nx);
-		util::sigmoidPrime(matA, nx);
+		util::sigmoidPrime_inplace(matA, nx);
 		checkResult(cpuM, matA, nx, testtype);
 
 		// free host memory

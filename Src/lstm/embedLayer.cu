@@ -12,6 +12,7 @@
 
 namespace embedLayer {
 
+
 	/****************************EmbedLayer Implementation***************************/
 
 	EmbedLayer::EmbedLayer(int embeds, int times, int hid, int cat, float lr, int dic) :
@@ -19,7 +20,7 @@ namespace embedLayer {
 		Wlen = embeds * dic;
 
 		W = new float[Wlen];
-
+		WGrad = new float[Wlen];
 		init();
 	}
 
@@ -33,6 +34,7 @@ namespace embedLayer {
 	}
 
 	inline void EmbedLayer::WbGradInit() {
+		
 		embedweightGradInit(WGrad, Wlen);
 	}
 
@@ -43,13 +45,21 @@ namespace embedLayer {
 		return out;
 	}
 
+	//void calGrad_old(float* delta, int textCode)
+	//{
+	//	WbGradInit();//for each h, necessary to reinitialize grad to zero.
+	//	
+	//	for (int iy = 0; iy < embedSize; iy++) {
+	//		WGrad[iy * dictSize + textCode] = delta[iy];
+	//	}
+
+	//}// need to be done senLen times
+
 	void EmbedLayer::calGrad(float* delta, int textCode)
 	{
 		WbGradInit();//for each h, necessary to reinitialize grad to zero.
-		
-		for (int iy = 0; iy < embedSize; iy++) {
-			WGrad[iy * dictSize + textCode] = delta[iy];
-		}
+
+		WGrad = embedCalGrad(WGrad, delta, textCode, embedSize, dictSize);
 
 	}// need to be done senLen times
 
@@ -73,7 +83,6 @@ namespace embedLayer {
 			std::cout << out[i] << " ";
 		std::cout << std::endl;
 	}
-
 
 
 }

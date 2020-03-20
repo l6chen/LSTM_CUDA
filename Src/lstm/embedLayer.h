@@ -14,12 +14,12 @@
 
 namespace embedLayer {
 	class EmbedLayer : public basicLayer::BasicLayer {
-	private:
+	public:
 		float* W;
 		float* WGrad;
 		int Wlen, dictSize;
 
-	public:
+	
 		EmbedLayer(int embeds, int times, int hid, int cat, float lr, int dic);
 		~EmbedLayer();
 
@@ -27,7 +27,7 @@ namespace embedLayer {
 		inline void WbGradInit();
 		
 		float* forward(int textCode)override;
-
+		
 		void calGrad(float* delta, int textCode)override;
 		void updateWb()override;
 

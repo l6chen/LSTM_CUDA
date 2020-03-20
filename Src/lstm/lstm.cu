@@ -5,6 +5,7 @@
 */
 #include "lstm.h"
 #include <unordered_map>
+#include <ctime>
 
 namespace lstm {
 	LSTMNetwork::LSTMNetwork(float lr, int cat, int hid, int emb, int ep) {
@@ -13,6 +14,7 @@ namespace lstm {
 		hiddenStates = hid;
 		embedSize = emb;
 		epoch = ep;
+		oD = new basicLayer::OutputsDelta();
 	}
 	void LSTMNetwork::train(dataLoader::DataSets* ds){
 		timeSteps = ds->sentenLen;
@@ -47,7 +49,7 @@ namespace lstm {
 
 		std::unordered_map<std::string, basicLayer::BasicLayer*> layers{
 		{"emb", layerEmbed}, {"og", layerOg}, {"ig", layerIg}, {"fg", layerFg},
-		{"ct",layerCt}, {"c", layerC}, {"hg",layerHg}, {"den", layerDen} };
+		{"ct",layerCt}, {"cg", layerC}, {"hg",layerHg}, {"den", layerDen} };
 
 		//Load all trainSet, may need to modify
 		std::vector<std::vector<int>>& trainX = ds->trainX;
@@ -56,19 +58,43 @@ namespace lstm {
 		std::cout << "Training Start!" << "\n";
 		for (int ep = 0; ep < epoch; ep++) {
 			float loss = 0;
+			float avgloss = 0;
+
 			for (int sample = 0; sample < trainY.size(); sample++) {
+				std::clock_t start = std::clock();
+				double duration = 0.0;
 				std::vector<int> x = trainX[sample];
 				int y = trainY[sample];
-				float* t = new float[3];
+				float* t = new float[3]();
 				t[y] = 1.0f;
-				float* pred = forward(layers, x);
+				float* pred = forward(layers, x);//pass
 				loss = backward(pred, t, x, layers);
-				std::cout << "\r" << "Sample: " << sample << "/" <<  std::flush;
+				avgloss += loss;
+				duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
+				std::cout << "\r" << "Sample: " << sample << " loss: " << loss 
+					<< " Training Time: " << duration <<std::endl;
 			}
-			std::cout << "Loss for epoch " << ep << "is :" << loss << std::endl;
+			avgloss /= trainY.size();
+			std::cout << "Loss for epoch " << ep << "is :" << avgloss << std::endl;
 		}
 	}
 	void LSTMNetwork::test(){}
+
+	void showemb(float* emb) {
+		for (int i = 0;i<10;i++)
+			std::cout << emb[i];
+		std::cout << "\n";
+	}
+
+	void showWbGrad(basicLayer::BasicLayer* g) {
+		float* Wh = g->getWh();
+		float* Wx = g->getWx();
+		std::cout << "Wh:" << Wh[0] << " " << Wh[128 * 128 - 1] << Wh[64 * 64 - 1] << "\n";
+		for (int i = 0; i < 128 * 10; i++) {
+			std::cout << Wx[i] << " ";
+		}
+	}
+
 
 	/********************************Private Methods******************************************/
 	float* LSTMNetwork::forward(std::unordered_map<std::string, basicLayer::BasicLayer*>&
@@ -77,13 +103,15 @@ namespace lstm {
 			int textCode = x[t];
 			float* embed = layers["emb"]->forward(textCode);
 			float* h = oD->hs[t];//actually last h
-			//followed by fg, ig, og, ct, c, h update
+
 			oD->fgs[t + 1] = layers["fg"]->forward(embed, h, util::sigmoid);
 			oD->igs[t + 1] = layers["ig"]->forward(embed, h, util::sigmoid);
 			oD->ogs[t + 1] = layers["og"]->forward(embed, h, util::sigmoid);
 			oD->cts[t + 1] = layers["ct"]->forward(embed, h, util::sigmoid);
-			oD->cgs[t + 1] = layers["c"]->forward(oD);
+			oD->cgs[t + 1] = layers["cg"]->forward(oD);
 			oD->hs[t + 1] = layers["hg"]->forward(oD);
+			h = nullptr;
+			embed = nullptr;
 		}
 		return layers["den"]->forward(nullptr, oD->hs[timeSteps], util::softmax);
 	}
@@ -101,7 +129,8 @@ namespace lstm {
 		oD->dhs[timeSteps] = dh;
 		for (int t = timeSteps; t > 0; t--) {
 			//caldeltafollowed by og, fg,ig,ct
-			float* embed = layers["emb"]->forward(x[t]);
+
+			float* embed = layers["emb"]->forward(x[t - 1]);
 			layers["og"]->calDeltak(oD, t);
 			layers["fg"]->calDeltak(oD, t);
 			layers["ig"]->calDeltak(oD, t);
@@ -111,6 +140,7 @@ namespace lstm {
 				util::matMul(oD->dis[t], layers["ig"]->getWh(), 1, emb, hid), 1, hid, '+'),
 				util::matMul(oD->dfs[t], layers["fg"]->getWh(), 1, emb, hid), 1, hid, '+'),
 				util::matMul(oD->dcs[t], layers["ct"]->getWh(), 1, emb, hid), 1, hid, '+');
+			embed = nullptr;
 		}
 		float* xlast = layers["emb"]->forward(x.back());
 		layers["og"]->calGrad(xlast, oD, &oD->dos);
@@ -121,7 +151,13 @@ namespace lstm {
 		layers["fg"]->updateWb();
 		layers["ig"]->updateWb();
 		layers["ct"]->updateWb();
+		layers["cg"]->resetTime();
+		layers["hg"]->resetTime();
 		
+		h = nullptr;
+		dh = nullptr;
+		xlast = nullptr;
+
 		//embed
 		std::vector<float*> deltasEmbed = getDeltaEmbed(layers["fg"]->getWx(), 
 			layers["ig"]->getWx(), layers["ct"]->getWx(), layers["og"]->getWx());
@@ -132,8 +168,11 @@ namespace lstm {
 			layers["emb"]->calGrad(deltaE, textCode);
 			layers["emb"]->updateWb();
 		}
+
+
 		return loss;
 	}
+
 	std::vector<float*> LSTMNetwork::getDeltaEmbed(float* Wfx, float* Wix,
 		float* Wcx, float* Wox) {
 
@@ -152,6 +191,7 @@ namespace lstm {
 		}
 		return deltasEmbed;
 	}
+
 
 	void LSTMNetwork::OutputsDeltaInit() {
 		std::vector<float*> fgs(timeSteps + 1, new float[hiddenStates]());//may add 1

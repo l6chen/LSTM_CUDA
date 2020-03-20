@@ -14,7 +14,7 @@
 
 namespace denseLayer {
 	class DenseLayer : public basicLayer::BasicLayer {
-	private:
+	public:
 		float* W, * b;
 		float* WGrad, * bGrad;
 		int Wlen, blen;
@@ -22,14 +22,14 @@ namespace denseLayer {
 		void updateWb(float lr);
 		
 
-	public:
+	
 		DenseLayer(int embeds, int times, int hid, int cat, float lr);
 		~DenseLayer();
 
 		void init() override;
 		inline void WbGradInit();
 
-		float* forward(float* x, float* h, void (*activate)(float* A, int n))override;
+		float* forward(float* x, float* h, float* (*activate)(float* A, int n))override;
 		float* backward(float* h, float* y, float* t)override;//return delta for last Layer
 
 		void showW() const;
@@ -37,6 +37,8 @@ namespace denseLayer {
 		void showforward(float* in) const;
 		float calLoss(float* p, float* t)override;
 		float* getW() const { return W; }
+
+		void showGrad();
 		
 
 	};

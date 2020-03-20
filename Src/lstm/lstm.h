@@ -25,8 +25,8 @@ namespace lstm {
 		int timeSteps = -1;
 		int epoch;
 		int dictSize;
-		basicLayer::OutputsDelta* oD = new basicLayer::OutputsDelta();
-		//dataLoader::DataSets* dsT = new dataLoader::DataSets();//need consider
+		basicLayer::OutputsDelta* oD;
+		
 		int curStep = 0;
 
 		float* forward(std::unordered_map<std::string, basicLayer::BasicLayer*>&
@@ -35,6 +35,7 @@ namespace lstm {
 			std::unordered_map<std::string, basicLayer::BasicLayer*>& layers);
 		std::vector<float*> getDeltaEmbed(float* Wfx, float* Wix,
 			float* Wcx, float* Wox);
+		
 		void OutputsDeltaInit();
 
 	public:

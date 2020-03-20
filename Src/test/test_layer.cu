@@ -32,27 +32,28 @@ namespace testLayer {
 		std::cout << "\n\n";
 	}
 	void testGateLayer() {
-		gateLayer::GateLayer* ig = new gateLayer::GateLayer(5, 5, 10, 3, 0.001);
+		gateLayer::GateLayer* ig = new gateLayer::GateLayer(10, 29, 128, 3, 0.001);
 		ig->showVar();
-		ig->showW();
+		//ig->showW();
 		ig->showb();
+		ig->checkGrad();
 
 		delete ig;
 		std::cout << "\n\n";
 	}
 
 	void testDenseLayer() {
-		denseLayer::DenseLayer* dl = new denseLayer::DenseLayer(5, 5, 10, 3, 0.001);
+		denseLayer::DenseLayer* dl = new denseLayer::DenseLayer(10, 29, 128, 3, 0.001);
 		dl->showVar();
 		dl->showW();
 		dl->showb();
-
+		dl->showGrad();
 		delete dl;
 		std::cout << "\n\n";
 	}
 
 	void testEmbedLayer() {
-		embedLayer::EmbedLayer* el = new embedLayer::EmbedLayer(10, 5, 10, 3, 0.001, 18);
+		embedLayer::EmbedLayer* el = new embedLayer::EmbedLayer(10, 5, 128, 3, 0.001, 18);
 
 		el->showW();
 

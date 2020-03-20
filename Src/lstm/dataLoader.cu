@@ -220,9 +220,9 @@ namespace dataLoader {
 		const std::vector<int> labelCode = labelEncode(_sentiments);
 		DataSets* ds = datasplitter(textCode, labelCode);
 		ds->dictLen = dict.size();
-		std::cout << ds->trainX[0][0] << " " << ds->trainY[0] << std::endl;//for debug
-		std::cout << dict.size() <<std::endl;//for debug
-		std::cout << "sentenLen" << ds->sentenLen << std::endl;
+		//std::cout << ds->trainX[0][0] << " " << ds->trainY[0] << std::endl;//for debug
+		//std::cout << dict.size() <<std::endl;//for debug
+		//std::cout << "sentenLen" << ds->sentenLen << std::endl;
 		return ds;
 	}
 

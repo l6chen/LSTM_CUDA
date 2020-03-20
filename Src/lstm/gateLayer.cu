@@ -23,7 +23,15 @@ namespace gateLayer {
 		Wx = new float[Wxlen];
 		b = new float[blen];
 
+		WhGrad = new float[Whlen];
+		WxGrad = new float[Wxlen];
+		bGrad = new float[blen];
+
+		//std::cout << Whlen << Wxlen << blen;
 		init();
+		//showW();
+		//std::cout << "\n\n";
+		//showb();
 	}
 
 	GateLayer::~GateLayer() {
@@ -39,14 +47,14 @@ namespace gateLayer {
 		weightbiasGradInit(WhGrad, WxGrad, bGrad, Whlen, Wxlen, blen);
 	}
 
-	float* GateLayer::forward(float* x, float* h, void (*activate)(float* A, int n)) 
+	float* GateLayer::forward(float* x, float* h, float* (*activate)(float* A, int n)) 
 	{
+		curTime++;
 		float* wh = util::matMul(Wh, h, hiddenStates, hiddenStates, 1);
 		float* wx = util::matMul(Wx, x, hiddenStates, embedSize, 1);
-		float* out = util::matElem(util::matElem(wh, wx, hiddenStates, 1, '+'),
-			b, hiddenStates, 1, '+');
-		(*activate)(out, hiddenStates);
-		curTime++;
+		float* out = (*activate)(util::matElem(util::matElem(wh, wx, hiddenStates, 1, '+'),
+			b, hiddenStates, 1, '+'), hiddenStates);
+
 		return out;
 	}
 
@@ -56,11 +64,11 @@ namespace gateLayer {
 		auto hs = datas->hs;
 		auto dfs = datas->dfs;
 		for (int k = curTime; k > 0; k--) {
-			//WhGrad,dgates[0] is for unpoint/unref
-			util::matElem_inplace(WhGrad, util::matMul(dgates[0][k], hs[k - 1],
+			//WhGrad
+			WhGrad = util::matElem(WhGrad, util::matMul(dgates[0][k], hs[k - 1],
 				hiddenStates, 1, hiddenStates), hiddenStates, hiddenStates, '+');
 			//bGrad
-			util::matElem_inplace(bGrad, dfs[k], hiddenStates, 1, '+');
+			bGrad = util::matElem(bGrad, dfs[k], hiddenStates, 1, '+');
 		}
 		//WxGrad Wrong HERE
 		WxGrad = util::matMul(dgates->back(), x, hiddenStates, 1, embedSize);
@@ -70,9 +78,10 @@ namespace gateLayer {
 	void GateLayer::updateWb() {
 		int h = hiddenStates;
 		int e = embedSize;
-		Wh = util::matElem(Wh, util::matMulScal(WhGrad, lr, h, h), h, h, '-');
-		Wx = util::matElem(Wh, util::matMulScal(WxGrad, lr, h, e), h, e, '-');
-		b = util::matElem(b, util::matMulScal(bGrad, lr, h, h), h, h, '-');
+		Wh = util::matElem(util::matMulScal(WhGrad, lr, h, h), Wh, h, h, '-');
+		Wx = util::matElem(util::matMulScal(WxGrad, lr, h, e), Wx, h, e, '-');
+		b = util::matElem(util::matMulScal(bGrad, lr, h, 1), b, h, 1, '-');
+		curTime = 0;
 	}
 
 	//Showing information
@@ -98,6 +107,24 @@ namespace gateLayer {
 		std::cout << std::endl;
 	}
 
+	void GateLayer::checkGrad() {
+		WbGradInit();
+		for (int i = 0; i < Whlen; i++)
+			if (WhGrad[i] > 1)
+				std::cout << WhGrad[i] << " ";
+		std::cout << std::endl;
+
+		for (int i = 0; i < Wxlen; i++)
+			if (WxGrad[i] > 1)
+				std::cout << WxGrad[i] << " ";
+		std::cout << std::endl;
+
+		for (int i = 0; i < blen; i++)
+			if (bGrad[i] > 1)
+				std::cout << bGrad[i] << " ";
+		std::cout << std::endl;
+	}
+
 	/****************************OutputLayer Implementation***************************/
 
 	//TODO self.delta_h_list[-1] = delta_h
@@ -107,8 +134,8 @@ namespace gateLayer {
 		auto dh = datas->dhs[k];
 		auto cg = datas->cgs[k];
 		
-		util::tanh(cg, hiddenStates);
-		util::sigmoidPrime(og, hiddenStates);
+		cg = util::tanh(cg, hiddenStates);
+		cg = util::sigmoidPrime(og, hiddenStates);
 		datas->dos[k] = util::matElem(util::matElem(dh,
 			cg, hiddenStates, 1, '*'),
 			og, hiddenStates, 1, '*');
@@ -127,9 +154,9 @@ namespace gateLayer {
 		auto ct = datas->cts[k];
 
 
-		util::tanh(cg, hiddenStates);
-		util::tanhPrime(cg, hiddenStates);
-		util::sigmoidPrime(ig, hiddenStates);
+		cg = util::tanh(cg, hiddenStates);
+		cg = util::tanhPrime(cg, hiddenStates);
+		ig = util::sigmoidPrime(ig, hiddenStates);
 		datas->dis[k] = util::matElem(util::matElem(util::matElem(util::matElem(dh,
 			og, hiddenStates, 1, '*'),
 			cg, hiddenStates, 1, '*'),
@@ -151,9 +178,9 @@ namespace gateLayer {
 		auto ct = datas->cts[k];
 
 
-		util::tanh(cg, hiddenStates);
-		util::tanhPrime(cg, hiddenStates);
-		util::sigmoidPrime(fg, hiddenStates);
+		cg = util::tanh(cg, hiddenStates);
+		cg = util::tanhPrime(cg, hiddenStates);
+		fg = util::sigmoidPrime(fg, hiddenStates);
 		datas->dfs[k] = util::matElem(util::matElem(util::matElem(util::matElem(dh,
 			og, hiddenStates, 1, '*'),
 			cg, hiddenStates, 1, '*'),
@@ -174,9 +201,9 @@ namespace gateLayer {
 		auto ct = datas->cts[k];
 
 
-		util::tanh(cg, hiddenStates);
-		util::tanhPrime(cg, hiddenStates);
-		util::tanhPrime(ct, hiddenStates);
+		cg = util::tanh(cg, hiddenStates);
+		cg = util::tanhPrime(cg, hiddenStates);
+		ct = util::tanhPrime(ct, hiddenStates);
 		datas->dcs[k] = util::matElem(util::matElem(util::matElem(util::matElem(dh,
 			og, hiddenStates, 1, '*'),
 			cg, hiddenStates, 1, '*'),
@@ -189,22 +216,24 @@ namespace gateLayer {
 	/****************************Special Layers Implementation***************************/
 
 	float* CellGate::forward(basicLayer::OutputsDelta* datas) {
+		curTime++;
 		float* fg = datas->fgs[curTime];
 		float* cgprev = datas->cgs[curTime - 1];
 		float* ig = datas->igs[curTime];
 		float* ct = datas->cts[curTime];
 
-		float* fc = util::matElem(fg, cgprev, hiddenStates, hiddenStates, '*');
-		float* ic = util::matElem(ig, ct, hiddenStates, hiddenStates, '*');
+		float* fc = util::matElem(fg, cgprev, hiddenStates, 1, '*');
+		float* ic = util::matElem(ig, ct, hiddenStates, 1, '*');
 		return util::matElem(fc, ic, hiddenStates, 1, '+');
 	}
 
 
 	float* HiddenGate::forward(basicLayer::OutputsDelta* datas) {
+		curTime++;
 		float* og = datas->ogs[curTime];
 		float* ct = datas->cts[curTime];
 
-		util::tanh(ct, hiddenStates);
+		ct = util::tanh(ct, hiddenStates);
 		return util::matElem(og, ct, hiddenStates, 1, '*');
 	}
 }

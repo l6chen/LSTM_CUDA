@@ -22,17 +22,17 @@ namespace basicLayer {
 		float* d_b, curandState* rndstates) { // truncated uniform
 		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
 		unsigned int iy = blockIdx.y;
-		unsigned int idh = iy * (hid + emb) + ix;
+		unsigned int idh = iy * hid + emb + ix;
 
 		//for Wh
 		if (ix < hid && iy < hid) {
-			d_Wh[iy * hid + ix] = curand_uniform(&rndstates[idh]) * 2.0E-4 - 1.0E-4;
+			d_Wh[iy * hid + ix] = curand_uniform(&rndstates[idh]) * 2.0E-3 - 1.0E-3;
 		}//for Wx
-		else if (ix < hid + emb && iy < hid) {
-			d_Wx[iy * emb + ix - hid] = curand_uniform(&rndstates[idh]) * 2.0E-4 - 1.0E-4;
+		else if (ix < hid && iy < hid + emb) {
+			d_Wx[(iy - hid) * hid + ix] = curand_uniform(&rndstates[idh]) * 2.0E-3 - 1.0E-3;
 		}//for bin
-		else if (ix < hid && iy == hid) {
-			d_b[ix] = curand_uniform(&rndstates[idh]) * 2.0E-4 - 1.0E-4;
+		else if (ix < hid && iy == hid + emb) {
+			d_b[ix] = 0.0f;
 		}
 		        
 	}
@@ -47,10 +47,10 @@ namespace basicLayer {
 		if (ix < hid && iy < hid) {
 			d_Wh[iy * hid + ix] = 0.0f;
 		}//for Wx
-		else if (ix < hid + emb && iy < hid) {
-			d_Wx[iy * emb + ix - hid] = 0.0f;
+		else if (ix < hid && iy < hid + emb) {
+			d_Wx[(iy - hid) * hid + ix] = 0.0f;
 		}//for bin
-		else if (ix < hid && iy == hid) {
+		else if (ix < hid && iy == hid + emb) {
 			d_b[ix] = 0.0f;
 		}
 
@@ -76,15 +76,15 @@ namespace basicLayer {
 		if (layerId == 1) {//for dense
 			//for W
 			if (ix < nx - 1 && iy < ny) {
-				d_W[iy * (nx - 1) + ix] = curand_uniform(&rndstates[idx]) * 2.0E-4 - 1.0E-4;
+				d_W[iy * (nx - 1) + ix] = curand_uniform(&rndstates[idx]) * 2.0E-3 - 1.0E-3;
 			}//for b
 			else if (ix == nx - 1 && iy < ny) {
-				d_b[iy] = curand_uniform(&rndstates[idx]) * 2.0E-4 - 1.0E-4;
+				d_b[iy] = 0.0f;
 			}
 		}
 		else {//for embed
 			if (ix < nx && iy < ny)
-				d_W[idx] = curand_uniform(&rndstates[idx]) * 2.0E-4 - 1.0E-4;
+				d_W[idx] = curand_uniform(&rndstates[idx]) * 2.0E-3 - 1.0E-3;
 		}
 	}
 
@@ -95,7 +95,7 @@ namespace basicLayer {
 		unsigned int idx = iy * nx + ix;
 
 		if (ix < nx && iy < ny)
-			d_W[idx] = curand_uniform(&rndstates[idx]) * 2.0E-4 - 1.0E-4;
+			d_W[idx] = curand_uniform(&rndstates[idx]) * 2.0E-3 - 1.0E-3;
 	
 	}
 
@@ -120,10 +120,40 @@ namespace basicLayer {
 		}
 	}
 
+	__global__ void embedCalGradGPU(float* W, float* delta, int textCode, int nx, int ny) {
+		unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
 
-	void BasicLayer::randInit() {
-		int m = hiddenStates + 1;
-		int n = embedSize + hiddenStates;
+		if (ix < nx) {
+			W[ix * ny + textCode] = delta[ix];
+		}
+	}
+
+
+	float* BasicLayer::embedCalGrad(float* W, float* delta, int textCode, int nx, int ny) {
+		int n = nx * ny;
+		float* out = new float[n];
+		float* d_W, * d_delta;
+
+		CHECK(cudaMalloc((void**)& d_W, n * sizeof(float)));
+		CHECK(cudaMalloc((void**)& d_delta, nx * sizeof(float)));
+		CHECK(cudaMemcpy(d_W, W, n * sizeof(float), cudaMemcpyHostToDevice));
+		CHECK(cudaMemcpy(d_delta, delta, nx * sizeof(float), cudaMemcpyHostToDevice));
+
+		dim3 block(BLOCK_SIZE);
+		dim3 grid((n + block.x - 1) / block.x);
+		embedCalGradGPU << <grid, block >> > (d_W, d_delta, textCode, nx, ny);
+		//sync
+		cudaDeviceSynchronize();
+		CHECK(cudaMemcpy(out, d_W, n * sizeof(float), cudaMemcpyDeviceToHost));
+		cudaFree(d_W);
+		cudaFree(d_delta);
+		return out;
+
+	}
+
+
+	void BasicLayer::randInit(int m ,int n) {
+
 		cudaMalloc((void**)& rndstates, m * n * sizeof(curandState));
 		dim3 block(BLOCK_SIZE, 1);
 		dim3 grid((n + block.x - 1) / block.x, m);
@@ -132,7 +162,11 @@ namespace basicLayer {
 
 	void BasicLayer::weightbiasTruncInit(float* Wh, float* Wx, float* b,
 		const int Whlen, const int Wxlen, const int blen) {
-		randInit();
+
+		int m = hiddenStates + embedSize + 1;
+		int n = blen;
+
+		randInit(m, n);
 
 		float* d_Wh, * d_Wx, * d_b;
 
@@ -147,8 +181,6 @@ namespace basicLayer {
 		CHECK(cudaMemcpy(d_b, b, blen * sizeof(float), cudaMemcpyHostToDevice));
 
 		//randomlize weights and bias
-		int m = hiddenStates + 1;
-		int n = blen;
 
 		dim3 block(BLOCK_SIZE, 1);
 		dim3 grid((n + block.x - 1) / block.x, m);
@@ -171,14 +203,14 @@ namespace basicLayer {
 		const int Whlen, const int Wxlen, const int blen) {
 
 		float* d_Wh, * d_Wx, * d_b;
-		std::cout << Whlen << Wxlen << blen << std::endl;
+
 		//malloc device memory
 		CHECK(cudaMalloc((void**)& d_Wh, Whlen * sizeof(float)));
 		CHECK(cudaMalloc((void**)& d_Wx, Wxlen * sizeof(float)));
 		CHECK(cudaMalloc((void**)& d_b, blen * sizeof(float)));
 
 		//Init as 0;
-		int m = hiddenStates + 1;
+		int m = hiddenStates + embedSize + 1;
 		int n = blen;
 
 		dim3 block(BLOCK_SIZE, 1);
@@ -245,7 +277,10 @@ namespace basicLayer {
 
 	void BasicLayer::denseweightbiasTruncInit(float* W, float* b,
 		const int Wlen, const int blen) {
-		randInit();
+		int m = categories;
+		int n = hiddenStates + 1;
+
+		randInit(m, n);
 
 		float* d_W, * d_b;
 
@@ -258,8 +293,7 @@ namespace basicLayer {
 		CHECK(cudaMemcpy(d_b, b, blen * sizeof(float), cudaMemcpyHostToDevice));
 
 		//randomlize weights and bias
-		int m = categories;
-		int n = hiddenStates + 1;
+
 
 		dim3 block(BLOCK_SIZE, 1);
 		dim3 grid((n + block.x - 1) / block.x, m);
@@ -278,7 +312,11 @@ namespace basicLayer {
 
 	void BasicLayer::denseweightbiasGradInit(float* W, float* b,
 		const int Wlen, const int blen) {
-		randInit();
+
+		int m = categories;
+		int n = hiddenStates + 1;
+
+		randInit(m, n);
 
 		float* d_W, * d_b;
 
@@ -291,8 +329,7 @@ namespace basicLayer {
 		CHECK(cudaMemcpy(d_b, b, blen * sizeof(float), cudaMemcpyHostToDevice));
 
 		//randomlize weights and bias
-		int m = categories;
-		int n = hiddenStates + 1;
+
 
 		dim3 block(BLOCK_SIZE, 1);
 		dim3 grid((n + block.x - 1) / block.x, m);
@@ -310,7 +347,10 @@ namespace basicLayer {
 
 	void BasicLayer::embedweightTruncInit(float* W, const int Wlen) {
 
-		randInit();
+		int m = embedSize;
+		int n = Wlen / m;
+
+		randInit(m, n);
 
 		float* d_W;
 
@@ -321,14 +361,10 @@ namespace basicLayer {
 		CHECK(cudaMemcpy(d_W, W, Wlen * sizeof(float), cudaMemcpyHostToDevice));
 
 		//randomlize weights and bias
-		int m = embedSize;
-		int n = Wlen / m;
-		std::cout << Wlen << "\n";
-		std::cout << m << " " << n <<"\n";
-		
+
 		dim3 block(BLOCK_SIZE, 1);
 		dim3 grid((n + block.x - 1) / block.x, m);
-		std::cout << (n + block.x - 1) / block.x;
+
 		embedweightbiasTruncInitGPU << <grid, block >> > (n, m,
 			d_W, rndstates);
 
@@ -342,7 +378,8 @@ namespace basicLayer {
 
 	void BasicLayer::embedweightGradInit(float* W, const int Wlen) {
 
-		randInit();
+		int m = embedSize;
+		int n = Wlen / m;
 
 		float* d_W;
 
@@ -353,8 +390,6 @@ namespace basicLayer {
 		CHECK(cudaMemcpy(d_W, W, Wlen * sizeof(float), cudaMemcpyHostToDevice));
 
 		//randomlize weights and bias
-		int m = embedSize;
-		int n = Wlen / m;
 
 		dim3 block(BLOCK_SIZE, 1);
 		dim3 grid((n + block.x - 1) / block.x, m);

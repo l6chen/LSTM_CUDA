@@ -14,20 +14,21 @@
 
 namespace gateLayer {
 	class GateLayer: public basicLayer::BasicLayer {
-	protected:
+	public:
         float* Wh, * Wx, * b;
 		float* WhGrad, * WxGrad, * bGrad;
 		int Whlen, Wxlen, blen;
-		int curTime = 1;
+		int curTime = 0;
 
-	public:
+
+	
 		GateLayer(int embeds, int times, int hid, int cat, float lr);
 		~GateLayer();
 
 		void init() override;
 		inline void WbGradInit();
 
-		float* forward(float* x, float* h, void (*activate)(float* A, int n))override;
+		float* forward(float* x, float* h, float* (*activate)(float* A, int n))override;
 		void calGrad(float* x, basicLayer::OutputsDelta* datas, std::vector<float*>* dgates)override;
 		void updateWb()override;
 
@@ -37,6 +38,8 @@ namespace gateLayer {
 
 		float* getWh() const override{ return Wh; }
 		float* getWx() const override{ return Wx; }
+
+		void checkGrad();
 
 	};
 
@@ -80,21 +83,21 @@ namespace gateLayer {
 	/***********************************Special Layers***************************************/
 
 	class CellGate : public basicLayer::BasicLayer {
-	private:
-		int curTime = 0;
 	public:
+		int curTime = 0;
 		CellGate(int embeds, int times, int hid, int cat, float lr) :
 			basicLayer::BasicLayer(embeds, times, hid, cat, lr) {}
 		float* forward(basicLayer::OutputsDelta* datas) override;
+		void resetTime() override { curTime = 0; }
 	};
 
 	class HiddenGate : public basicLayer::BasicLayer {
-	private:
-		int curTime = 0;
 	public:
+		int curTime = 0;
 		HiddenGate(int embeds, int times, int hid, int cat, float lr) :
 			basicLayer::BasicLayer(embeds, times, hid, cat, lr) {}
 		float* forward(basicLayer::OutputsDelta* datas) override;
+		void resetTime() override { curTime = 0; }
 	};
 }
 
